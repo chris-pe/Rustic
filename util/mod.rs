@@ -1,4 +1,6 @@
-﻿use collections::hashmap::HashMap;
+﻿//!Miscellaneous utility classes.
+use collections::hashmap::HashMap;
+
 
 pub struct Properties {
 	props : HashMap<~str, ~str>
