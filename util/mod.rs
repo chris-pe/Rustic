@@ -50,19 +50,27 @@ impl Properties {
 	*/
 	pub fn load<T : Reader>(&mut self,  reader : T)-> IoResult<uint> {
 		let mut t : IoResult<uint> = Ok(0); // Result<T, IoError>
-		//let mut multi = ~"";
+		let mut multi = ~"";
 		for line in BufferedReader::new(reader).lines() {
 			match line {
-				Ok(l) => {	
-					let mut buf = l.trim_left();	
-					if buf.starts_with("#") || buf.starts_with("!") { continue; } // Comment line
+				Ok(l) => {
+					multi = multi.append(l.trim_left());
+					if multi.starts_with("#") || multi.starts_with("!") { multi=~""; continue; } // Comment line
+
+					let multic = multi.clone();
+					let mut buf = multic.slice_from(0); // How to convert ~str to &str ???
 					if buf.ends_with("\n") {
 						if buf.ends_with("\r\n") { buf=buf.slice_to(buf.len()-2); } // Line ends with '\r\n'
 							else { buf=buf.slice_to(buf.len()-1); } // Line ends with '\n'
 					}
-					if buf.len()==0 { continue; } //Empty line
+					if buf.len()==0 { multi=~""; continue; } //Empty line
+					
+					// Special characters conversion
+					// .... to be coded
+					
+					if buf.ends_with("\\") { multi = buf.slice_to(buf.len()-1).to_owned(); continue; }
 
-					let mut idx : uint = 0;
+					let mut idx : uint = 0u;
 					for c in buf.chars() { if !c.is_whitespace() && c!='=' && c!=':' { idx+=1; }
 											else { break; } }
 					let key = buf.slice_chars(0, idx);
@@ -74,7 +82,7 @@ impl Properties {
 				Err(e) => { t=Err(e); break; }
 			}
 			//println!("DEBUG:{}'", multi);
-			//multi=~"";
+			multi=~"";
 		}
 		if t.is_ok() { t = Ok(self.props.len()); }
 		t
