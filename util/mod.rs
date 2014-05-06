@@ -39,7 +39,8 @@ impl Properties {
 	<u>Notes&nbsp;:</u>
 	<ul>
 	<li>a line terminator is either '\n' or '\r\n'</li>
-	<li>the following characters can be escaped&nbsp;: ASCII white-space '&#92;&nbsp;', line terminator '\r' or '\n', '&#92;#', '&#92;!', '\=', '&#92;:'</li>
+	<li>the following characters can be escaped&nbsp;: tab '\t', form feed '\f', line terminators '\r' or '\n'</li>
+	<li>'\' before a a non-valid escape character is not an error, the backslash is simply dropped; useful to escape '\\\', '\ ', '\\#', '\\!', '\=', '\\:'</li>
 	<li>a key-element pair may be spread out across several adjacent natural lines by terminating the line with a backslash character '\'</li>
 	<pre class='rust fn'>targetCities=\
         Detroit, \
@@ -57,27 +58,41 @@ impl Properties {
 					multi = multi.append(l.trim_left());
 					if multi.starts_with("#") || multi.starts_with("!") { multi=~""; continue; } // Comment line
 
-					let multic = multi.clone();
-					let mut buf = multic.slice_from(0); // How to convert ~str to &str ???
-					if buf.ends_with("\n") {
-						if buf.ends_with("\r\n") { buf=buf.slice_to(buf.len()-2); } // Line ends with '\r\n'
-							else { buf=buf.slice_to(buf.len()-1); } // Line ends with '\n'
+					if multi.ends_with("\n") {
+						if multi.ends_with("\r\n") { multi=multi.slice_to(multi.len()-2).to_owned(); } // Line ends with '\r\n'
+							else { multi=multi.slice_to(multi.len()-1).to_owned(); } // Line ends with '\n'
 					}
-					if buf.len()==0 { multi=~""; continue; } //Empty line
+					if multi.len()==0 { multi=~""; continue; } //Empty line
 					
-					// Special characters conversion
-					buf.replace("\\\\")
-					
-					if buf.ends_with("\\") { multi = buf.slice_to(buf.len()-1).to_owned(); continue; }
-
+					let multic = multi.clone();
+					let mut buf = multic.as_slice();
+					// Escape \t \f \r \n
 					let mut idx : uint = 0u;
+					let mut esc = false;
+					let mut bufc;
+					for c in buf.chars() {
+						if esc {
+							match c {
+								't' => { bufc=buf.slice_to(idx).to_owned().append("\t").append(buf.slice_from(idx+2)); esc=false }
+								'f' => { bufc=buf.slice_to(idx).to_owned().append("\u000c").append(buf.slice_from(idx+2)); esc=false }
+								'r' => { bufc=buf.slice_to(idx).to_owned().append("\r").append(buf.slice_from(idx+2)); esc=false }
+								'n' => { bufc=buf.slice_to(idx).to_owned().append("\n").append(buf.slice_from(idx+2)); esc=false }
+							 	 _  => { bufc=buf.slice_to(idx).to_owned().append(buf.slice_from(idx+1)); println!("DEBUG:'{}'", bufc); esc=false }
+							}
+							bufc;
+						}
+						if c=='\\' { esc=true; continue; }
+						idx+=1;
+					}					
+					if esc { multi = buf.slice_to(buf.len()-1).to_owned(); continue; }
+
+					idx = 0;
 					for c in buf.chars() { if !c.is_whitespace() && c!='=' && c!=':' { idx+=1; }
 											else { break; } }
 					let key = buf.slice_chars(0, idx);
 					buf = buf.slice_chars(idx, buf.char_len()); buf = buf.trim_left();
 					if buf.starts_with("=") || buf.starts_with(":") { buf=buf.slice_from(1); buf = buf.trim_left(); }					
 					self.props.insert(key.to_owned(), buf.to_owned()); println!("'{}'='{}'", key, buf);
-					//println!("DEBUG:{}'", l);
 				}
 				Err(e) => { t=Err(e); break; }
 			}
