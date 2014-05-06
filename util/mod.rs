@@ -66,7 +66,7 @@ impl Properties {
 					if buf.len()==0 { multi=~""; continue; } //Empty line
 					
 					// Special characters conversion
-					// .... to be coded
+					buf.replace("\\\\")
 					
 					if buf.ends_with("\\") { multi = buf.slice_to(buf.len()-1).to_owned(); continue; }
 
