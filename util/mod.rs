@@ -2,7 +2,7 @@
 use collections::hashmap::{HashMap, Keys, Entries, Values};
 use std::io::{BufferedReader, IoResult};
 
-/// Contains a list of properties. A property is a name and value pair.
+/// Contains a list of properties. A property is a key-value pair.
 pub struct Properties {
 	props : HashMap<~str, ~str>
 }
@@ -28,7 +28,7 @@ impl Properties {
 	/**Reader is already buffered during reading; so before invoking this method, there is no need for any additional BufferedReader to wrap around the reader.
 	This method load properties from an input character stream processed in term of lines according to the following rules&nbsp;:
 	<ul>
-	<li>leading white-spaces (white-space Unicode definition) are skipped.</li>
+	<li>leading white-spaces (Unicode definition) are skipped.</li>
 	<li>line that contains only white-spaces is considered blank and is ignored</li>
 	<li>if the the first non-white character is a '#' or '!', line is considered as a comment and is skipped.</li>
 	<li>the key contains all of the characters in the line starting with the first non-white space character and up to,
@@ -40,8 +40,8 @@ impl Properties {
 	<ul>
 	<li>a line terminator is either '\n' or '\r\n'</li>
 	<li>the following characters can be escaped&nbsp;: tab '\t', form feed '\f', line terminators '\r' or '\n'</li>
-	<li>'\' before a a non-valid escape character is not an error, the backslash is simply dropped; useful to escape '\\\', '\ ', '\\#', '\\!', '\=', '\\:'</li>
-	<li>a key-element pair may be spread out across several adjacent natural lines by terminating the line with a backslash character '\'</li>
+	<li>'\' before a non-valid escape character is not an error, the backslash is simply dropped; useful to escape '\\\', '\ ', '\\#', '\\!', '\=', '\\:'</li>
+	<li>a key-element pair may be spread out across several adjacent lines by terminating the line with a backslash character '\'</li>
 	<pre class='rust fn'>targetCities=\
         Detroit, \
         Chicago, \
