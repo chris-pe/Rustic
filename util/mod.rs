@@ -1,5 +1,5 @@
 ﻿//!Miscellaneous utility classes.
-use collections::hashmap::HashMap;
+use collections::hashmap::{HashMap, Keys, Entries, Values};
 use std::io::{BufferedReader, IoResult};
 
 /// Contains a list of properties. A property is a name and value pair.
@@ -50,7 +50,7 @@ impl Properties {
 	</ul>
 	*/
 	pub fn load<T : Reader>(&mut self,  reader : T)-> IoResult<uint> {
-		let mut t : IoResult<uint> = Ok(0); // Result<T, IoError>
+		let mut ioresult : IoResult<uint> = Ok(0);
 		let mut multi = ~"";
 		for line in BufferedReader::new(reader).lines() {
 			match line {
@@ -64,42 +64,77 @@ impl Properties {
 					}
 					if multi.len()==0 { multi=~""; continue; } //Empty line
 					
-					let multic = multi.clone();
-					let mut buf = multic.as_slice();
-					// Escape \t \f \r \n
-					let mut idx : uint = 0u;
+					// line finishing with and off number of '\' is a multiline
 					let mut esc = false;
-					let mut bufc;
-					for c in buf.chars() {
-						if esc {
-							match c {
-								't' => { bufc=buf.slice_to(idx).to_owned().append("\t").append(buf.slice_from(idx+2)); esc=false }
-								'f' => { bufc=buf.slice_to(idx).to_owned().append("\u000c").append(buf.slice_from(idx+2)); esc=false }
-								'r' => { bufc=buf.slice_to(idx).to_owned().append("\r").append(buf.slice_from(idx+2)); esc=false }
-								'n' => { bufc=buf.slice_to(idx).to_owned().append("\n").append(buf.slice_from(idx+2)); esc=false }
-							 	 _  => { bufc=buf.slice_to(idx).to_owned().append(buf.slice_from(idx+1)); println!("DEBUG:'{}'", bufc); esc=false }
-							}
-							bufc;
-						}
-						if c=='\\' { esc=true; continue; }
-						idx+=1;
-					}					
-					if esc { multi = buf.slice_to(buf.len()-1).to_owned(); continue; }
+					for c in multi.clone().chars_rev() {
+						if c=='\\' { esc=!esc; } else { break; }
+					}
+					if esc { multi = multi.slice_to(multi.len()-1).to_owned(); continue; }
 
-					idx = 0;
-					for c in buf.chars() { if !c.is_whitespace() && c!='=' && c!=':' { idx+=1; }
+					let mut idx = 0u;
+					for c in multi.chars() { if !c.is_whitespace() && c!='=' && c!=':' { idx+=c.len_utf8_bytes(); }
 											else { break; } }
-					let key = buf.slice_chars(0, idx);
-					buf = buf.slice_chars(idx, buf.char_len()); buf = buf.trim_left();
-					if buf.starts_with("=") || buf.starts_with(":") { buf=buf.slice_from(1); buf = buf.trim_left(); }					
-					self.props.insert(key.to_owned(), buf.to_owned()); println!("'{}'='{}'", key, buf);
+					let key = multi.slice_to(idx).to_owned();
+					multi = multi.slice_from(idx).to_owned(); multi = multi.trim_left().to_owned();
+					if multi.starts_with("=") || multi.starts_with(":") { multi=multi.slice_from(1).to_owned(); multi = multi.trim_left().to_owned(); }					
+					self.props.insert(escapeChars(key), escapeChars(multi)); //println!("'{}'='{}'", key,multi);
+					
+					// println!("DEBUG:'{}'", multi); 
+
 				}
-				Err(e) => { t=Err(e); break; }
+				Err(e) => { ioresult=Err(e); break; }
 			}
 			//println!("DEBUG:{}'", multi);
 			multi=~"";
 		}
-		if t.is_ok() { t = Ok(self.props.len()); }
-		t
+		if ioresult.is_ok() { ioresult = Ok(self.props.len()); }
+		ioresult
 	}
+
+	/*pub fn store<T : Writer>(&mut self,  _writer : T) {
+		for i in self.props.iter() {
+			println!("{}", i);
+		}
+	}*/
+
+	/// An iterator visiting all properties keys in arbitrary order. Iterator element type is &'a ~str.
+	pub fn keys<'a>(&'a self) -> Keys<'a, ~str, ~str> {
+		self.props.keys()
+	}
+	
+	/// An iterator visiting all properties values in arbitrary order. Iterator element type is &'a ~str.
+	pub fn values<'a>(&'a self) -> Values<'a, ~str, ~str> {
+		self.props.values()
+	}
+
+	/// An iterator visiting all properties key-value pairs in arbitrary order. Iterator element type is (&'a ~str, &'a ~str).
+	pub fn iter<'a>(&'a self) -> Entries<'a, ~str, ~str> {
+		self.props.iter()
+	}
+	
+	/// Clear the properties, removing all key-value pairs.
+	pub fn clear(&mut self) {
+		self.props.clear();
+	}
+
 }
+
+fn escapeChars(mut s : ~str) -> ~str {
+	// Escape \t \f \r \n
+	let mut esc=false;
+	let mut idx : uint = 0u;
+	for mut c in s.clone().chars() {
+		if esc {
+			match c {
+				't' => { s=s.slice_to(idx).to_owned().append("\t").append(s.slice_from(idx+2)); esc=false }
+				'f' => { s=s.slice_to(idx).to_owned().append("\x0c").append(s.slice_from(idx+2)); esc=false }
+				'r' => { s=s.slice_to(idx).to_owned().append("\r").append(s.slice_from(idx+2)); esc=false }
+				'n' => { s=s.slice_to(idx).to_owned().append("\n").append(s.slice_from(idx+2)); esc=false }
+				_  => { s=s.slice_to(idx).to_owned().append(s.slice_from(idx+1)); c=' '; esc=false }
+			}
+		}
+		if c=='\\' { esc=true; continue; }
+		idx+=c.len_utf8_bytes();
+	}
+	s
+	}

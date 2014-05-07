@@ -8,4 +8,7 @@ fn main() {
 	let f = File::open_mode(&p, Open, Read);
 	let mut props = Properties::new();
 	println!("num:{}", props.load(f));
+	for i in props.iter() {
+		println!("{}", i);
+	}
 }
