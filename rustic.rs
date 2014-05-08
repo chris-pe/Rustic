@@ -1,4 +1,6 @@
 //!Complementary crate to standard crates providing basic and easy to use functionalities.
+//!
+//!This project is at an early development stage, please do not use elements tagged as <i>WIP</i>. 
 #![crate_id = "rustic#0.01"]
 #![crate_type = "lib"]
 
@@ -10,3 +12,4 @@
 extern crate collections;
 
 pub mod util;
+pub mod sql;
