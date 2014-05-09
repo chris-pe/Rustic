@@ -11,5 +11,9 @@
 
 extern crate collections;
 
-pub mod util;
+///Miscellaneous utility classes.
+pub mod util {
+	pub use self::properties::Properties;
+	mod properties;
+}
 pub mod sql;
