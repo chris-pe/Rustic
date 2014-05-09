@@ -16,4 +16,13 @@ pub mod util {
 	pub use self::properties::Properties;
 	mod properties;
 }
-pub mod sql;
+
+///<b>WIP&nbsp;: </b>Provides the API for accessing and processing data stored in a data source (usually a relational database) using the Rust programming language.
+pub mod sql {
+	pub use self::connection::Connection;
+	mod connection;
+	///Supported Databases
+	pub enum DbType {
+		SQLITE
+	}
+}
