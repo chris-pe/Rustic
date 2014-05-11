@@ -8,8 +8,8 @@
 #![license = "GPLv2"]
 #![comment = "Miscellaneous utility classes for the Rust programming language."]
 
-
 extern crate collections;
+extern crate libc;
 
 ///Miscellaneous utility classes.
 pub mod util {
@@ -17,12 +17,14 @@ pub mod util {
 	mod properties;
 }
 
-///<b>WIP&nbsp;: </b>Provides the API for accessing and processing data stored in a data source (usually a relational database) using the Rust programming language.
+///Provides the API for accessing and processing data stored in a data source (usually a relational database) using the Rust programming language.
 pub mod sql {
 	pub use self::connection::Connection;
+	pub use self::connection::Statement;
+	pub use self::connection::ResultSet;
 	mod connection;
 	///Supported Databases
 	pub enum DbType {
-		SQLITE
+		SQLITE3
 	}
 }
