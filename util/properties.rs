@@ -1,5 +1,5 @@
 ﻿use collections::hashmap::{HashMap, Keys, Entries, Values, MutEntries};
-use std::io::{BufferedReader, BufferedWriter, IoResult};
+use std::io::{BufferedReader, BufferedWriter, IoError};
 
 ///Contains a list of properties. A property is a key-value pair.
 pub struct Properties {
@@ -38,13 +38,13 @@ impl Mutable for Properties {
 impl MutableMap<~str, ~str> for Properties {
 	///Insert a property into the list. If the property already had a value present in the list, that value is returned.
 	///Otherwise None is returned.
-	fn swap(&mut self, k: ~str, v: ~str) -> Option<~str> {
-		self.props.swap(k, v)
+	fn swap(&mut self, key: ~str, value: ~str) -> Option<~str> {
+		self.props.swap(key, value)
 	}
 
 	///Removes a property from the list, returning the value of the property if it was previously in the list.
-	fn pop(&mut self, k: &~str) -> Option<~str> {
-		self.props.pop(k)
+	fn pop(&mut self, key: &~str) -> Option<~str> {
+		self.props.pop(key)
 	}
 
 	///Return a mutable reference to the value corresponding to the property
@@ -98,8 +98,7 @@ impl Properties {
 	is equivalent to <pre class='rust fn'>targetCities=Detroit, Chicago, Los Angeles</pre>
 	</ul>
 	*/
-	pub fn load<T : Reader>(&mut self,  reader : T)-> IoResult<uint> {
-		let mut ioresult : IoResult<uint> = Ok(0);
+	pub fn load<T : Reader>(&mut self,  reader : T)-> Option<IoError> {
 		let mut multi = ~"";
 		for line in BufferedReader::new(reader).lines() {
 			match line {
@@ -108,14 +107,14 @@ impl Properties {
 					if multi.starts_with("#") || multi.starts_with("!") { multi=~""; continue; } // Comment line
 
 					if multi.ends_with("\n") {
-						if multi.ends_with("\r\n") { multi=multi.slice_to(multi.len()-2).to_owned(); } // Line ends with '\r\n'
-							else { multi=multi.slice_to(multi.len()-1).to_owned(); } // Line ends with '\n'
+						if multi.ends_with("\r\n") { multi=multi.slice_to(multi.len()-2).into_owned(); } // Line ends with '\r\n'
+							else { multi=multi.slice_to(multi.len()-1).into_owned(); } // Line ends with '\n'
 					}
 					if multi.len()==0 { multi=~""; continue; } //Empty line
 					
-					// line finishing with and off number of '\' is a multiline
+					// line finishing with an odd number of '\' is a multiline
 					let mut esc = false;
-					for c in multi.clone().chars_rev() {
+					for c in multi.chars_rev() {
 						if c=='\\' { esc=!esc; } else { break; }
 					}
 					if esc { multi = multi.slice_to(multi.len()-1).to_owned(); continue; }
@@ -131,35 +130,33 @@ impl Properties {
 					let key = multi.slice_to(idx).to_owned();
 					
 					multi = multi.slice_from(idx).to_owned(); multi = multi.trim_left().to_owned();
-					if multi.starts_with("=") || multi.starts_with(":") { 	multi=multi.slice_from(1).to_owned();
-																			multi = multi.trim_left().to_owned(); }					
+					if multi.starts_with("=") || multi.starts_with(":") { 	multi=multi.slice_from(1).into_owned();
+																			multi = multi.trim_left().into_owned(); }					
 					self.props.insert(decode_chars(key), decode_chars(multi));
 				}
-				Err(e) => { ioresult=Err(e); break; }
+				Err(e) => { return Some(e); }
 			}
 			multi=~"";
 		}
-		if ioresult.is_ok() { ioresult = Ok(self.props.len()); }
-		ioresult
+		None
 	}
 
 	///Store properties to an UTF-8 output character stream (for example, but not restricted to, file) suitable for loading
 	///into a Properties list using the <code><b>fn <a href="#method.load" class="fnname">load</a>&lt;T:
 	///<a class="trait" href="http://static.rust-lang.org/doc/master/std/io/trait.Reader.html"
 	///title="std::io::Reader">Reader</a>&gt;</b></code> method.
-	pub fn store<T : Writer>(&mut self,  writer : T) -> IoResult <uint> {
-		let mut ioresult : IoResult<uint> = Ok(0);
+	pub fn store<T : Writer>(&mut self,  writer : T) -> Option<IoError> {
 		let mut buf = BufferedWriter::new(writer);
 		for kv in self.props.iter() {
 			match kv {
-				(k,v) => match buf.write_line(encode_chars(k.to_owned(), true).append("=").append(encode_chars(v.to_owned(), false))) {
-							Ok(()) => continue,
-							Err(e) => { ioresult=Err(e); break; }
+				(k,v) => match buf.write_line(encode_chars(k.to_owned(), true)
+						.append("=").append(encode_chars(v.to_owned(), false))) {
+							Ok(_)  => continue,
+							Err(e) => { return Some(e); }
 				}
 			}
 		}
-		if ioresult.is_ok() { ioresult = Ok(self.props.len()); }
-		ioresult
+		None
 	}
 
 	///An iterator visiting all properties keys in arbitrary order. Iterator element type is &'a ~str.
