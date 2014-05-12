@@ -36,9 +36,20 @@ pub struct ResultSet<'a> {
 }
 
 impl<'a> Statement<'a> {
-	///Execute the SQL statement and returns the result in an iterable ResultSet.
-	pub fn execute(&'a self) -> ResultSet<'a> {
+	///Execute the SQL query and returns the result in an iterable ResultSet.
+	pub fn execute_query(&'a self) -> ResultSet<'a> {
 		ResultSet { pStmt : self, error : false }
+	}
+	pub fn execute(&'a self) -> Option<IoError> {
+		match self.pCon.dbType {
+		SQLITE3 => {
+		let res = unsafe { sqlite3_step(self.pStmt) };
+		if res != 100 && res != 101	{
+			Some (IoError {	kind : OtherIoError, desc : "Row Fetch Failed",
+							detail : Some(get_error(self.pCon.pDb, res))}) }
+		else { return None; }
+		}
+		}
 	}
 }
 
@@ -48,7 +59,7 @@ impl<'a> ResultSet<'a> {
 		match self.pStmt.pCon.dbType {
 		SQLITE3 => {
 		let retC;
-		unsafe { retC = CString::new(sqlite3_column_text(self.pStmt.pStmt, column_index as c_int) as *i8, false) };
+		retC = unsafe { CString::new(sqlite3_column_text(self.pStmt.pStmt, column_index as c_int) as *i8, false) };
 		if retC.is_null() { return ~""; };
 		match retC.as_str() { None => return ~"", Some(s) => return s.into_owned() }
 		}
@@ -70,11 +81,8 @@ impl<'a> Iterator<IoResult<ResultSet<'a>>> for ResultSet<'a> {
 		if res == 100 	{ Some(Ok(*self)) } else
 		if res == 101	{ None } else
 		{	self.error = true;
-			let mut des = ~""; let mut det = ~"";
-			match (unsafe {	CString::new(sqlite3_errmsg(self.pStmt.pCon.pDb), false) }).as_str() { None => (), Some(s) => des=s.into_owned() }
-			match (unsafe { CString::new(sqlite3_errstr(res), false) }).as_str() { None => (), Some(s) => det=s.into_owned() }
 			Some (Err(IoError {	kind : OtherIoError, desc : "Row Fetch Failed",
-								detail : Some(des.append(" (").append(res.to_str()).append(":").append(det).append(")"))})) }
+								detail : Some(get_error(self.pStmt.pCon.pDb, res))})) }
 		}
 		}
 	}
@@ -90,16 +98,9 @@ impl Connection {
 		SQLITE3 => {
 		let pDb : *mut () = RawPtr::null();
 		let res = filename.with_c_str(|c_str| unsafe { sqlite3_open(c_str, &pDb) });
-		if res==0	{ Ok( Connection { dbType : dbType, pDb : pDb } ) }
-		else { 	let mut des = ~""; let mut det = ~""; 
-				if pDb.is_not_null()	{ 	
-					match (unsafe { CString::new(sqlite3_errmsg(pDb), false) }).as_str() { None => (), Some(s) => des=s.into_owned() }
-				}
-				match (unsafe { CString::new(sqlite3_errstr(res), false) }).as_str() { None => (), Some(s) => det=s.into_owned() }
-				Err(IoError {	kind : ConnectionFailed,
-								desc : "Database Connection Failed",
-								detail : Some(des.append(" (").append(res.to_str()).append(":").append(det).append(")"))})
-			}				
+		if res==0	{ 	Ok( Connection { dbType : dbType, pDb : pDb } ) }
+		else 		{ 	Err(IoError {	kind : ConnectionFailed, desc : "Database Connection Failed",
+								detail : Some(get_error(pDb, res))}) }				
 		}
 		}
 	}
@@ -113,12 +114,9 @@ impl Connection {
 		let pStmt  : *mut() = RawPtr::null();
 		let pzTail : *() = RawPtr::null();
 		let res = sql.with_c_str(|c_str| unsafe { sqlite3_prepare_v2(self.pDb, c_str, -1, &pStmt, &pzTail) });
-		if res==0 { Ok(Statement { pCon : self, pStmt : pStmt }) }
-		else { 	let mut des = ~""; let mut det = ~"";
-				match (unsafe {	CString::new(sqlite3_errmsg(self.pDb), false) }).as_str() { None => (), Some(s) => des=s.into_owned() }
-				match (unsafe { CString::new(sqlite3_errstr(res), false) }).as_str() { None => (), Some(s) => det=s.into_owned() }
-				Err(IoError {	kind : InvalidInput, desc : "Statement Creation Failed",
-								detail : Some(des.append(" (").append(res.to_str()).append(":").append(det).append(")"))}) }
+		if res==0	{	Ok(Statement { pCon : self, pStmt : pStmt }) }
+			else 	{	Err(IoError {	kind : InvalidInput, desc : "Statement Creation Failed",
+										detail : Some(get_error(self.pDb, res))}) }
 		}
 		}
 	}
@@ -141,3 +139,12 @@ impl Drop for Connection {
 		}
 	}
 }*/
+
+fn get_error(pDb : *mut(), errno : c_int) -> ~str {
+	let mut des = ~""; let mut det = ~"";
+	let desC = unsafe {	CString::new(sqlite3_errmsg(pDb), false) };
+	if desC.is_not_null() { match desC.as_str() { None => (), Some(s) => des=s.into_owned() } }
+	let detC = unsafe { CString::new(sqlite3_errstr(errno), false) }; 
+	if detC.is_not_null() { match detC.as_str() { None => (), Some(s) => det=s.into_owned() } }
+	des.append(" (").append(errno.to_str()).append(":").append(det).append(")")
+}
