@@ -36,7 +36,8 @@ impl Mutable for Properties {
 }
 
 impl MutableMap<~str, ~str> for Properties {
-	///Insert a property into the list. If the property already had a value present in the list, that value is returned. Otherwise None is returned.
+	///Insert a property into the list. If the property already had a value present in the list, that value is returned.
+	///Otherwise None is returned.
 	fn swap(&mut self, k: ~str, v: ~str) -> Option<~str> {
 		self.props.swap(k, v)
 	}
@@ -51,7 +52,8 @@ impl MutableMap<~str, ~str> for Properties {
 		self.props.find_mut(key)
 	}
 
-	///Insert a property into the list. An existing value for a property is replaced by the new value. Return true if the property did not already exist in the list.
+	///Insert a property into the list. An existing value for a property is replaced by the new value.
+	///Return true if the property did not already exist in the list.
 	fn insert(&mut self, key: ~str, value: ~str) -> bool {
 		self.props.insert(key, value)
 	}
@@ -70,7 +72,8 @@ impl Properties {
 	
 	/// Load properties from an UTF-8 input character stream (for example, but not restricted to, file).
 	///
-	/**Reader is already buffered during reading; so before invoking this method, there is no need for any additional BufferedReader to wrap around the reader.
+	/**Reader is already buffered during reading; so before invoking this method,
+	there is no need for any additional BufferedReader to wrap around the reader.
 	This method load properties from an input character stream processed in term of lines according to the following rules&nbsp;:
 	<ul>
 	<li>leading white-spaces (Unicode definition) are skipped.</li>
@@ -85,7 +88,8 @@ impl Properties {
 	<ul>
 	<li>a line terminator is either '\n' or '\r\n'</li>
 	<li>the following characters can be escaped&nbsp;: tab '\t', form feed '\f', line terminators '\r' or '\n'</li>
-	<li>'\' before a non-valid escape character is not an error, the backslash is simply dropped; useful to escape '\\\', '\ ', '\\#', '\\!', '\=', '\\:'</li>
+	<li>'\' before a non-valid escape character is not an error, the backslash is simply dropped;
+	useful to escape '\\\', '\ ', '\\#', '\\!', '\=', '\\:'</li>
 	<li>a key-element pair may be spread out across several adjacent lines by terminating the line with a backslash character '\'</li>
 	<pre class='rust fn'>targetCities=\
         Detroit, \
@@ -127,7 +131,8 @@ impl Properties {
 					let key = multi.slice_to(idx).to_owned();
 					
 					multi = multi.slice_from(idx).to_owned(); multi = multi.trim_left().to_owned();
-					if multi.starts_with("=") || multi.starts_with(":") { multi=multi.slice_from(1).to_owned(); multi = multi.trim_left().to_owned(); }					
+					if multi.starts_with("=") || multi.starts_with(":") { 	multi=multi.slice_from(1).to_owned();
+																			multi = multi.trim_left().to_owned(); }					
 					self.props.insert(decode_chars(key), decode_chars(multi));
 				}
 				Err(e) => { ioresult=Err(e); break; }
@@ -138,7 +143,10 @@ impl Properties {
 		ioresult
 	}
 
-	///Store properties to an UTF-8 output character stream (for example, but not restricted to, file) suitable for loading into a Properties list using the <code><b>fn <a href="#method.load" class="fnname">load</a>&lt;T: <a class="trait" href="http://static.rust-lang.org/doc/master/std/io/trait.Reader.html" title="std::io::Reader">Reader</a>&gt;</b></code> method.
+	///Store properties to an UTF-8 output character stream (for example, but not restricted to, file) suitable for loading
+	///into a Properties list using the <code><b>fn <a href="#method.load" class="fnname">load</a>&lt;T:
+	///<a class="trait" href="http://static.rust-lang.org/doc/master/std/io/trait.Reader.html"
+	///title="std::io::Reader">Reader</a>&gt;</b></code> method.
 	pub fn store<T : Writer>(&mut self,  writer : T) -> IoResult <uint> {
 		let mut ioresult : IoResult<uint> = Ok(0);
 		let mut buf = BufferedWriter::new(writer);
@@ -169,7 +177,8 @@ impl Properties {
 		self.props.iter()
 	}
 	
-	///An iterator visiting all properties key-value pairs in arbitrary order, with mutable references to the values. Iterator element type is (&'a ~str, &'a mut ~str).
+	///An iterator visiting all properties key-value pairs in arbitrary order, with mutable references to the values.
+	///Iterator element type is (&'a ~str, &'a mut ~str).
 	pub fn mut_iter<'a>(&'a mut self) -> MutEntries<'a, ~str, ~str> {
 		self.props.mut_iter()
 	}
@@ -200,22 +209,24 @@ fn encode_chars(mut s : ~str, isKey : bool) -> ~str {
 	let mut esc=true;
 	let mut idx = 0u;
 	for c in s.clone().chars() {
-		if c.is_whitespace() 	{ 	if esc 	{ 	match c {
-													'\t'   => { s=s.slice_to(idx).to_owned().append("\\t").append(s.slice_from(idx+1)); idx+=1; }
-													'\x0c' => { s=s.slice_to(idx).to_owned().append("\\f").append(s.slice_from(idx+1)); idx+=1; }
-													'\r'   => { s=s.slice_to(idx).to_owned().append("\\r").append(s.slice_from(idx+1)); idx+=1; }
-													'\n'   => { s=s.slice_to(idx).to_owned().append("\\n").append(s.slice_from(idx+1)); idx+=1; }
-													_      => { s=s.slice_to(idx).to_owned().append("\\").append(s.slice_from(idx)); idx+=1; }
-												}
-									} else 	{ 	match c {
-													'\r' => { s=s.slice_to(idx).to_owned().append("\\r").append(s.slice_from(idx+1)); idx+=1; }
-													'\n' => { s=s.slice_to(idx).to_owned().append("\\n").append(s.slice_from(idx+1)); idx+=1; }
-													_    => ()
-												}
-											}
-								}
+		if c.is_whitespace() 	{
+			if esc 	{ 	match c {
+							'\t'   => { s=s.slice_to(idx).to_owned().append("\\t").append(s.slice_from(idx+1)); idx+=1; }
+							'\x0c' => { s=s.slice_to(idx).to_owned().append("\\f").append(s.slice_from(idx+1)); idx+=1; }
+							'\r'   => { s=s.slice_to(idx).to_owned().append("\\r").append(s.slice_from(idx+1)); idx+=1; }
+							'\n'   => { s=s.slice_to(idx).to_owned().append("\\n").append(s.slice_from(idx+1)); idx+=1; }
+							_      => { s=s.slice_to(idx).to_owned().append("\\").append(s.slice_from(idx)); idx+=1; }
+						}
+			} else 	{ 	match c {
+							'\r' => { s=s.slice_to(idx).to_owned().append("\\r").append(s.slice_from(idx+1)); idx+=1; }
+							'\n' => { s=s.slice_to(idx).to_owned().append("\\n").append(s.slice_from(idx+1)); idx+=1; }
+							_    => ()
+						}
+					}
+		}
 		else 	{	if c=='\\' { s=s.slice_to(idx).to_owned().append("\\").append(s.slice_from(idx)); idx+=1; }
-					if !isKey { esc=false; } else if c=='=' || c==':' { s=s.slice_to(idx).to_owned().append("\\").append(s.slice_from(idx)); idx+=1; }
+					if !isKey { esc=false; }
+					else if c=='=' || c==':' { s=s.slice_to(idx).to_owned().append("\\").append(s.slice_from(idx)); idx+=1; }
 				}
 		idx+=c.len_utf8_bytes();
 	}
