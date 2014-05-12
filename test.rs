@@ -6,10 +6,16 @@ use rustic::sql::{Connection,SQLITE3};
 fn main() {
 	match Connection::new(SQLITE3, "test.db") {
 		Ok(db) => {
-					match db.prepare_statement("CREATE TABLE IF NOT EXISTS t(i INTEGER PRIMARY KEY);") {
+					match db.prepare_statement("CREATE TABLE t(i INTEGER PRIMARY KEY);") {
 						Ok(st) => {
-							for mut i in st.execute() {
-								i.get_string(0);
+							for i in st.execute() {
+								match i {
+									Ok(mut s)  => println!("{}", s.get_string(0)),
+									Err(e) => match e.detail {
+										Some(s) => println!("{}", s),
+										None => ()
+									}
+								}
 							}
 						},
 						Err(e) => match e.detail {
@@ -19,8 +25,14 @@ fn main() {
 					}
 					match db.prepare_statement("INSERT INTO t VALUES (1);") {
 						Ok(st) => {
-							for mut i in st.execute() {
-								i.get_string(0);
+							for i in st.execute() {
+								match i {
+									Ok(mut s)  => println!("{}", s.get_string(0)),
+									Err(e) => match e.detail {
+										Some(s) => println!("{}", s),
+										None => ()
+									}
+								}
 							}
 						},
 						Err(e) => match e.detail {
@@ -30,8 +42,14 @@ fn main() {
 					}
 					match db.prepare_statement("INSERT INTO t VALUES (2);") {
 						Ok(st) => {
-							for mut i in st.execute() {
-								i.get_string(0);
+							for i in st.execute() {
+								match i {
+									Ok(mut s)  => println!("{}", s.get_string(0)),
+									Err(e) => match e.detail {
+										Some(s) => println!("{}", s),
+										None => ()
+									}
+								}
 							}
 						},
 						Err(e) => match e.detail {
@@ -41,8 +59,14 @@ fn main() {
 					}
 					match db.prepare_statement("INSERT INTO t VALUES (3);") {
 						Ok(st) => {
-							for mut i in st.execute() {
-								i.get_string(0);
+							for i in st.execute() {
+								match i {
+									Ok(mut s)  => println!("{}", s.get_string(0)),
+									Err(e) => match e.detail {
+										Some(s) => println!("{}", s),
+										None => ()
+									}
+								}
 							}
 						},
 						Err(e) => match e.detail {
@@ -52,8 +76,14 @@ fn main() {
 					}
 					match db.prepare_statement("SELECT i FROM t;") {
 						Ok(st) => {
-							for mut i in st.execute() {
-								println!("{}", i.get_string(0));
+							for i in st.execute() {
+								match i {
+									Ok(mut s)  => println!("{}", s.get_string(0)),
+									Err(e) => match e.detail {
+										Some(s) => println!("{}", s),
+										None => ()
+									}
+								}
 							}
 						},
 						Err(e) => match e.detail {
