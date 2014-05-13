@@ -17,7 +17,7 @@ pub mod util {
 	mod properties;
 }
 
-///Provides the API for accessing and processing data stored in a data source (usually a relational database) using the Rust programming language.
+///Provides the API for accessing and processing data stored in a relational database.
 pub mod sql {
 	pub use self::connection::Connection;
 	pub use self::connection::Statement;
