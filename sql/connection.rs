@@ -1,4 +1,4 @@
-﻿use libc::{c_int, c_char, c_uchar, c_double,};
+﻿use libc::{c_int, c_char, c_uchar, c_double,c_void};
 use std::ptr::RawPtr;
 use std::c_str::CString;
 use std::io::{IoResult,IoError,ConnectionFailed,InvalidInput,OtherIoError};
@@ -22,7 +22,7 @@ extern {
 	fn sqlite3_bind_int(pStmt : *mut(), iCol : c_int, value : c_int) -> c_int;
 	fn sqlite3_bind_int64(pStmt : *mut(), iCol : c_int, value : i64) -> c_int;
 	fn sqlite3_bind_double(pStmt : *mut(), iCol : c_int, value : f64) -> c_int;
-	//fn sqlite3_bind_text(pStmt : *mut(), iCol : c_int, value : c_char*, n : c_int, f :  *mut()(*mut())		void(*)(void*)) -> c_int;
+	fn sqlite3_bind_text(pStmt : *mut(), iCol : c_int, value : *c_char, n : c_int, f: *extern fn(*mut c_void)) -> c_int;
 	fn sqlite3_bind_null(pStmt : *mut(), iCol : c_int) -> c_int;
 	fn sqlite3_reset(pStmt : *mut()) -> c_int;
 	//fn sqlite3_finalize(pStmt : *mut()) -> c_int;
@@ -126,14 +126,21 @@ impl<'a> Statement<'a> {
 		}
 		}
 	}
-/*
-	//int sqlite3_bind_text(sqlite3_stmt*, int, const char*, int n, void(*)(void*));
-	///Replace in the SQL Statement the '?' parameter by an &str. The leftmost parameter has an index of 1.
+
+	///<b>NOT WORKING</b>Replace in the SQL Statement the '?' parameter by an &str. The leftmost parameter has an index of 1.
+	pub fn set_string(&self, param_index : int, value : &str) -> Option<IoError> {
 		match self.pCon.dbType {
 		SQLITE3 => {
+			match value.with_c_str(|c_str| unsafe { sqlite3_bind_text(self.pStmt, param_index as c_int, c_str, -1, RawPtr::null()) }) {
+			//match 0 {
+				0 => None,
+				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
+										detail : Some(get_error(self.pCon.pDb, n as c_int))}) 
+			}
 		}
 		}
-*/
+	}
+
 	///Replace in the SQL Statement the '?' parameter by an SQL NULL. The leftmost parameter has an index of 1.
 	pub fn set_null(&mut self, param_index : int) -> Option<IoError> {
 		match self.pCon.dbType {

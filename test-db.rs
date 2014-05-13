@@ -6,7 +6,7 @@ use rustic::sql::{Connection,SQLITE3};
 fn main() {
 	match Connection::new(SQLITE3, "test-db.db") {
 		Ok(db) => {
-					match db.prepare_statement("CREATE TABLE t(i32 INTEGER PRIMARY KEY, i64 INTEGER, f32 REAL, f64 REAL);") {
+					match db.prepare_statement("CREATE TABLE t(i INTEGER PRIMARY KEY, f REAL, t TEXT);") {
 						Ok(st) => {
 							match st.execute() {
 									None    => (),
@@ -21,22 +21,19 @@ fn main() {
 							Some(s) => println!("{}", s)
 						}
 					}
-					match db.prepare_statement("INSERT INTO t VALUES (?,?,?,?);") {
+					match db.prepare_statement("INSERT INTO t VALUES (?,?,'bladudutrois');") {
 						Ok(st) => {
-							match st.set_int(1,1) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()} }
-							match st.set_long(2,1) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_float(3,1.0) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_double(4,1.0) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							match st.set_long(1,1) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							match st.set_double(2,1.1) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							//match st.set_string(3, "one___") { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
-							match st.set_int(1,2) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()} }
-							match st.set_long(2,2) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_float(3,2.0) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_double(4,2.0) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							match st.set_long(1,2) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							match st.set_double(2,2.2) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							//match st.set_string(3, "two___") { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
-							match st.set_int(1,3) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()} }
-							match st.set_long(2,3) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_float(3,3.0) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_double(4,3.0) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							match st.set_long(1,3) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							match st.set_double(2,3.3) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							//match st.set_string(3, "three") { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
 						},
 						Err(e) => match e.detail {
@@ -48,8 +45,8 @@ fn main() {
 						Ok(st) => {
 							for i in st.execute_query() {
 								match i {
-									Ok(mut s)  => println!("{}:{}:{}:{}", s.get_int(0), s.get_long(1),
-																		s.get_double(2), s.get_float(3), ),
+									Ok(mut s)  => println!("{}:{}:{}", s.get_long(0),
+																		s.get_double(1), s.get_string(2) ),
 									Err(e) => match e.detail {
 										Some(s) => println!("{}", s),
 										None => ()
@@ -59,8 +56,8 @@ fn main() {
 							println!("----------------------------------------------------");
 							for i in st.execute_query() {
 								match i {
-									Ok(mut s)  => println!("{}:{}:{}:{}", s.get_int(0), s.get_long(1),
-																		s.get_double(2), s.get_float(3), ),
+									Ok(mut s)  => println!("{}:{}:{}", s.get_long(0),
+																		s.get_double(1), s.get_string(2) ),
 									Err(e) => match e.detail {
 										Some(s) => println!("{}", s),
 										None => ()
