@@ -21,19 +21,19 @@ fn main() {
 							Some(s) => println!("{}", s)
 						}
 					}
-					match db.prepare_statement("INSERT INTO t VALUES (?,?,'bladudutrois');") {
+					match db.prepare_statement("INSERT INTO t VALUES (?,?,?);") {
 						Ok(st) => {
 							match st.set_long(1,1) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.set_double(2,1.1) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							//match st.set_string(3, "one___") { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							match st.set_string(3, "one___") { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
 							match st.set_long(1,2) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.set_double(2,2.2) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							//match st.set_string(3, "two___") { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							match st.set_string(3, "two___") { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
 							match st.set_long(1,3) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.set_double(2,3.3) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							//match st.set_string(3, "three") { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							match st.set_string(3, "three") { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
 						},
 						Err(e) => match e.detail {
@@ -43,7 +43,8 @@ fn main() {
 					}
 					match db.prepare_statement("SELECT * FROM t;") {
 						Ok(st) => {
-							for i in st.execute_query() {
+							let mut tmp=st.execute_query();
+							for i in tmp {
 								match i {
 									Ok(mut s)  => println!("{}:{}:{}", s.get_long(0),
 																		s.get_double(1), s.get_string(2) ),

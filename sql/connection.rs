@@ -1,37 +1,37 @@
 ﻿use libc::{c_int, c_char, c_uchar, c_double,c_void};
-use std::ptr::RawPtr;
 use std::c_str::CString;
-use std::io::{IoResult,IoError,ConnectionFailed,InvalidInput,OtherIoError};
+use std::io::{IoResult, IoError, ConnectionFailed, InvalidInput, OtherIoError};
+use std::ptr::null;
 use sql::{DbType};
 
 #[link(name = "sqlite3")]
 extern {
-    fn sqlite3_open(filename : *c_char, ppDb : **mut()) -> c_int;
-	fn sqlite3_close_v2(pDb : *mut()) -> c_int;
-	fn sqlite3_errmsg(pDb : *mut()) -> *c_char;
+    fn sqlite3_open(filename : *c_char, ppDb : **c_void) -> c_int;
+	fn sqlite3_close_v2(pDb : *c_void) -> c_int;
+	fn sqlite3_errmsg(pDb : * c_void) -> *c_char;
 	fn sqlite3_errstr(erno : c_int) -> *c_char;
-	fn sqlite3_prepare_v2(pDb : *mut(), sql : *c_char, nByte : c_int, ppStmt : **mut(), pzTail : **()) -> c_int;
-	fn sqlite3_step(pStmt : *mut()) -> c_int;
-	fn sqlite3_changes(pStmt : *mut()) -> c_int;
-	fn sqlite3_column_int(pStmt : *mut(), iCol : c_int) -> c_int;
-	fn sqlite3_column_int64(pStmt : *mut(), iCol : c_int) -> i64;
-	fn sqlite3_column_double(pStmt : *mut(), iCol : c_int) -> c_double;
-	fn sqlite3_column_text(pStmt : *mut(), iCol : c_int) -> *c_uchar;
-	//fn sqlite3_column_blob(pStmt : *mut(), iCol : c_int) ->  *();
-	//fn sqlite3_column_bytes(pStmt : *mut(), iCol : c_int) -> c_int;
-	fn sqlite3_bind_int(pStmt : *mut(), iCol : c_int, value : c_int) -> c_int;
-	fn sqlite3_bind_int64(pStmt : *mut(), iCol : c_int, value : i64) -> c_int;
-	fn sqlite3_bind_double(pStmt : *mut(), iCol : c_int, value : f64) -> c_int;
-	fn sqlite3_bind_text(pStmt : *mut(), iCol : c_int, value : *c_char, n : c_int, f: *extern fn(*mut c_void)) -> c_int;
-	fn sqlite3_bind_null(pStmt : *mut(), iCol : c_int) -> c_int;
-	fn sqlite3_reset(pStmt : *mut()) -> c_int;
-	//fn sqlite3_finalize(pStmt : *mut()) -> c_int;
+	fn sqlite3_prepare_v2(pDb : *c_void, sql : *c_char, nByte : c_int, ppStmt : **c_void, pzTail : **c_void) -> c_int;
+	fn sqlite3_step(pStmt : *c_void) -> c_int;
+	fn sqlite3_changes(pStmt : *c_void) -> c_int;
+	fn sqlite3_column_int(pStmt : *c_void, iCol : c_int) -> c_int;
+	fn sqlite3_column_int64(pStmt : *c_void, iCol : c_int) -> i64;
+	fn sqlite3_column_double(pStmt : *c_void, iCol : c_int) -> c_double;
+	fn sqlite3_column_text(pStmt : *c_void, iCol : c_int) -> *c_uchar;
+	//fn sqlite3_column_blob(pStmt : *c_void, iCol : c_int) ->  * c_void;
+	//fn sqlite3_column_bytes(pStmt : *c_void, iCol : c_int) -> c_int;
+	fn sqlite3_bind_int(pStmt : *c_void, iCol : c_int, value : c_int) -> c_int;
+	fn sqlite3_bind_int64(pStmt : *c_void, iCol : c_int, value : i64) -> c_int;
+	fn sqlite3_bind_double(pStmt : *c_void, iCol : c_int, value : f64) -> c_int;
+	fn sqlite3_bind_text(pStmt : *c_void, iCol : c_int, value : *c_char, n : c_int, f: *extern fn(*c_void)) -> c_int;
+	fn sqlite3_bind_null(pStmt : *c_void, iCol : c_int) -> c_int;
+	fn sqlite3_reset(pStmt : *c_void) -> c_int;
+	//fn sqlite3_finalize(pStmt : *c_void) -> c_int;
 }
 
 ///Connection permits to connect to supported databases.
 pub struct Connection {
 	dbType : DbType,
-	pDb : *mut()
+	pDb : *c_void
 }
 
 ///Statement is used for executing SQL instructions and returning results.
@@ -39,7 +39,7 @@ pub struct Connection {
 ///In the SQL Statement, ? character is replaced by a parameter using a set_* method.
 pub struct Statement<'a> {
 	pCon  : &'a Connection,
-	pStmt : *mut(),
+	pStmt : *c_void,
 }
 
 ///ResultSet is used for representing a database query result.
@@ -127,12 +127,12 @@ impl<'a> Statement<'a> {
 		}
 	}
 
-	///<b>NOT WORKING</b>Replace in the SQL Statement the '?' parameter by an &str. The leftmost parameter has an index of 1.
+	///Replace in the SQL Statement the '?' parameter by an &str. The leftmost parameter has an index of 1.
 	pub fn set_string(&self, param_index : int, value : &str) -> Option<IoError> {
 		match self.pCon.dbType {
 		SQLITE3 => {
-			match value.with_c_str(|c_str| unsafe { sqlite3_bind_text(self.pStmt, param_index as c_int, c_str, -1, RawPtr::null()) }) {
-			//match 0 {
+			let p : *extern fn(*c_void) = null();
+			match value.with_c_str(|c_str| unsafe { sqlite3_bind_text(self.pStmt, param_index as c_int, c_str, -1, p) }) {
 				0 => None,
 				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
 										detail : Some(get_error(self.pCon.pDb, n as c_int))}) 
@@ -206,8 +206,8 @@ impl<'a> ResultSet<'a> {
 		}
 		}
 	}
-	fn sqlite3_column_blob(pStmt : *mut(), iCol : c_int) ->  *();
-	fn sqlite3_column_bytes(pStmt : *mut(), iCol : c_int) -> c_int;*/
+	fn sqlite3_column_blob(pStmt : *mut c_void, iCol : c_int) ->  * c_void;
+	fn sqlite3_column_bytes(pStmt : *mut c_void, iCol : c_int) -> c_int;*/
 }
 
 /// Allow to iterate ResultSet.
@@ -239,7 +239,7 @@ impl Connection {
 	pub fn new(dbType : DbType, filename : &str) -> IoResult<Connection> {
 		match dbType {
 		SQLITE3 => {
-		let pDb : *mut () = RawPtr::null();
+		let pDb : *c_void = null();
 		let res = filename.with_c_str(|c_str| unsafe { sqlite3_open(c_str, &pDb) });
 		if res==0	{ 	Ok( Connection { dbType : dbType, pDb : pDb } ) }
 		else 		{ 	Err(IoError {	kind : ConnectionFailed, desc : "Database Connection Failed",
@@ -254,8 +254,8 @@ impl Connection {
 	pub fn prepare_statement<'a>(&'a self, sql :&str) -> IoResult<Statement<'a>> {
 		match self.dbType {
 		SQLITE3 => {
-		let pStmt  : *mut() = RawPtr::null();
-		let pzTail : *() = RawPtr::null();
+		let pStmt  : *c_void = null();
+		let pzTail : *c_void = null();
 		let res = sql.with_c_str(|c_str| unsafe { sqlite3_prepare_v2(self.pDb, c_str, -1, &pStmt, &pzTail) });
 		if res==0	{	Ok(Statement { pCon : self, pStmt : pStmt }) }
 			else 	{	Err(IoError {	kind : InvalidInput, desc : "Statement Creation Failed",
@@ -274,16 +274,7 @@ impl Drop for Connection {
 	}
 }
 
-/*impl<'a> Drop for Statement<'a> {
-	///The drop method is called when Statement goes out of scope, and therefore delete properly the Statement.
-	fn drop (&mut self) {
-		match self.pCon.dbType {
-			SQLITE3 => if self.pStmt.is_not_null() { unsafe { sqlite3_finalize(self.pStmt); } }
-		}
-	}
-}*/
-
-fn get_error(pDb : *mut(), errno : c_int) -> ~str {
+fn get_error(pDb : *c_void, errno : c_int) -> ~str {
 	let mut des = ~""; let mut det = ~"";
 	unsafe	{	let desC = CString::new(sqlite3_errmsg(pDb), false);
 				if desC.is_not_null() { match desC.as_str() { None => (), Some(s) => des=s.into_owned().clone() } } }
