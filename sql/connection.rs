@@ -219,11 +219,12 @@ impl<'a> Iterator<IoResult<ResultSet<'a>>> for ResultSet<'a> {
 	fn next(&mut self) -> Option<IoResult<ResultSet<'a>>> {
 		match self.pStmt.pCon.dbType {
 		SQLITE3 => {
-		if self.error { unsafe { sqlite3_reset(self.pStmt.pStmt) }; return None; }
+		if self.error { return None; }
 		let res = unsafe { sqlite3_step(self.pStmt.pStmt) };
 		if res == 100 	{ Some(Ok(*self)) } else
 		if res == 101	{ unsafe { sqlite3_reset(self.pStmt.pStmt) }; None } else
 		{	self.error = true;
+			unsafe { sqlite3_reset(self.pStmt.pStmt) };
 			Some (Err(IoError {	kind : OtherIoError, desc : "Row Fetch Failed",
 								detail : Some(get_error(self.pStmt.pCon.pDb, res))})) }
 		}
