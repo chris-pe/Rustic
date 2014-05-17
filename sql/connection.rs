@@ -1,5 +1,7 @@
 ﻿use libc::{c_int, c_char, c_uchar, c_double,c_void};
 use std::c_str::CString;
+use std::c_vec::CVec;
+use std::vec::Vec;
 use std::io::{IoResult, IoError, ConnectionFailed, InvalidInput, OtherIoError};
 use std::ptr::null;
 use sql::{DbType};
@@ -17,13 +19,14 @@ extern {
 	fn sqlite3_column_int64(pStmt : *c_void, iCol : c_int) -> i64;
 	fn sqlite3_column_double(pStmt : *c_void, iCol : c_int) -> c_double;
 	fn sqlite3_column_text(pStmt : *c_void, iCol : c_int) -> *c_uchar;
-	//fn sqlite3_column_blob(pStmt : *c_void, iCol : c_int) ->  * c_void;
-	//fn sqlite3_column_bytes(pStmt : *c_void, iCol : c_int) -> c_int;
+	fn sqlite3_column_blob(pStmt : *c_void, iCol : c_int) ->  *mut u8;
+	fn sqlite3_column_bytes(pStmt : *c_void, iCol : c_int) -> c_int;
 	fn sqlite3_bind_int(pStmt : *c_void, iCol : c_int, value : c_int) -> c_int;
 	fn sqlite3_bind_int64(pStmt : *c_void, iCol : c_int, value : i64) -> c_int;
 	fn sqlite3_bind_double(pStmt : *c_void, iCol : c_int, value : f64) -> c_int;
 	fn sqlite3_bind_text(pStmt : *c_void, iCol : c_int, value : *c_char, n : c_int, f: *extern fn(*c_void)) -> c_int;
 	fn sqlite3_bind_null(pStmt : *c_void, iCol : c_int) -> c_int;
+	fn sqlite3_bind_blob(pStmt : *c_void, iCol : c_int, value : *c_char, n : c_int, f: *extern fn(*c_void)) -> c_int;
 	fn sqlite3_reset(pStmt : *c_void) -> c_int;
 	//fn sqlite3_finalize(pStmt : *c_void) -> c_int;
 }
@@ -51,12 +54,12 @@ pub struct ResultSet<'a> {
 
 impl<'a> Statement<'a> {
 	///Execute the SQL query and returns the result in an iterable ResultSet.
-	pub fn execute_query(&'a  mut self) -> ResultSet<'a> {
+	pub fn execute_query(&'a mut self) -> ~ResultSet<'a> {
 		match self.pCon.dbType {
 		SQLITE3 => {
 		if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
 		self.exec=true;
-		ResultSet { pStmt : self, error : false }
+		~ResultSet { pStmt : self, error : false }
 		}
 		}
 	}
@@ -143,8 +146,8 @@ impl<'a> Statement<'a> {
 		match self.pCon.dbType {
 		SQLITE3 => {
 			if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
-			let p : *extern fn(*c_void) = null();
-			match value.with_c_str(|c_str| unsafe { sqlite3_bind_text(self.pStmt, param_index as c_int, c_str, -1, p) }) {
+			match value.with_c_str(|c_str| unsafe { sqlite3_bind_text(self.pStmt, param_index as c_int,
+													c_str, -1, -1 as *extern fn(*c_void)) }) {
 				0 => None,
 				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
 										detail : Some(get_error(self.pCon.pDb, n as c_int))}) 
@@ -152,7 +155,19 @@ impl<'a> Statement<'a> {
 		}
 		}
 	}
-
+	///Replace in the SQL Statement the '?' parameter by an &[u8]. The leftmost parameter has an index of 1.
+	pub fn set_blob(&mut self, param_index : int, value : Vec<u8>) -> Option<IoError> {
+		match self.pCon.dbType {
+		SQLITE3 => {
+			if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
+			match unsafe { sqlite3_bind_blob(self.pStmt, param_index as c_int, value.as_ptr() as *i8,
+												value.len() as i32, -1 as *extern fn(*c_void)) } {
+				0 => None,
+				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
+										detail : Some(get_error(self.pCon.pDb, n))}) }
+		}
+		}
+	}
 	///Replace in the SQL Statement the '?' parameter by an SQL NULL. The leftmost parameter has an index of 1.
 	pub fn set_null(&mut self, param_index : int) -> Option<IoError> {
 		match self.pCon.dbType {
@@ -204,23 +219,24 @@ impl<'a> ResultSet<'a> {
 	pub fn get_string(&mut self, column_index : int) -> ~str {
 		match self.pStmt.pCon.dbType {
 		SQLITE3 => {
-		unsafe { 	let retC = CString::new(sqlite3_column_text(self.pStmt.pStmt, column_index as c_int) as *i8, false) ;
-					if retC.is_null() { return ~""; };
-					match retC.as_str() { None => return ~"", Some(s) => return s.into_owned().clone() } }
+		 	let c_str = unsafe { CString::new(sqlite3_column_text(self.pStmt.pStmt, column_index as c_int) as *i8, false) };
+			if c_str.is_null() { return ~""; };
+			match c_str.as_str() { None => ~"", Some(s) => s.to_owned() }
 		}
 		}
 	}
-	/*
+
 	///Retrieve the column value as an array of bytes <i>column_index</i>from the current row, the first column is 0.
-	pub fn get_double(&mut self, column_index : int) -> ~u8[] {
+	pub fn get_blob(&mut self, column_index : int) -> Vec<u8> {
 		match self.pStmt.pCon.dbType {
 		SQLITE3 => {
-		unsafe { sqlite3_column_blob(self.pStmt.pStmt, column_index as c_int) } 
+		let p = unsafe { sqlite3_column_blob(self.pStmt.pStmt, column_index as c_int) };
+		let n = unsafe { sqlite3_column_bytes(self.pStmt.pStmt, column_index as c_int) };
+		let c_vec = unsafe { CVec::new(p, n as uint) };
+		Vec::from_slice(c_vec.as_slice()).clone()
 		}
 		}
 	}
-	fn sqlite3_column_blob(pStmt : *mut c_void, iCol : c_int) ->  * c_void;
-	fn sqlite3_column_bytes(pStmt : *mut c_void, iCol : c_int) -> c_int;*/
 }
 
 /// Allow to iterate ResultSet.
