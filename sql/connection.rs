@@ -40,6 +40,7 @@ pub struct Connection {
 pub struct Statement<'a> {
 	pCon  : &'a Connection,
 	pStmt : *c_void,
+	exec  : bool
 }
 
 ///ResultSet is used for representing a database query result.
@@ -50,40 +51,47 @@ pub struct ResultSet<'a> {
 
 impl<'a> Statement<'a> {
 	///Execute the SQL query and returns the result in an iterable ResultSet.
-	pub fn execute_query(&'a self) -> ResultSet<'a> {
-		ResultSet { pStmt : self, error : false }
-	}
-	///Execute the SQL statement and returns None if succeeds or an IoError.
-	pub fn execute(&'a self) -> Option<IoError> {
+	pub fn execute_query(&'a  mut self) -> ResultSet<'a> {
 		match self.pCon.dbType {
 		SQLITE3 => {
-		let res = unsafe { sqlite3_step(self.pStmt) };
-		if res != 100 && res != 101	{
-			unsafe { sqlite3_reset(self.pStmt) };
-			Some (IoError {	kind : OtherIoError, desc : "Statement Execution Failed",
-							detail : Some(get_error(self.pCon.pDb, res))}) }
-		else { unsafe { sqlite3_reset(self.pStmt) }; None }
+		if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
+		self.exec=true;
+		ResultSet { pStmt : self, error : false }
+		}
+		}
+	}
+	///Execute the SQL statement and returns None if succeeds or an IoError.
+	pub fn execute(&mut self) -> Option<IoError> {
+		match self.pCon.dbType {
+		SQLITE3 => {
+		if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
+		let res = unsafe { sqlite3_step(self.pStmt) }; self.exec=true;
+		match res {
+			100 | 101 => None,
+			_=> Some (IoError {	kind : OtherIoError, desc : "Statement Execution Failed",
+								detail : Some(get_error(self.pCon.pDb, res))}) }
 		}
 		}
 	}
 	///Execute the SQL INSERT, UPDATE or DELETE statement and returns the number of affected rows.
 	///Returns 0 for SQL statement that returns nothing. Returns an IoError if fails.
-	pub fn execute_update(&'a mut self) -> IoResult<int> {
+	pub fn execute_update(&mut self) -> IoResult<int> {
 		match self.pCon.dbType {
 		SQLITE3 => { 
-		let res = unsafe { sqlite3_step(self.pStmt) };
-		if res != 100 && res != 101	{
-			unsafe { sqlite3_reset(self.pStmt) };
-			Err (IoError {	kind : OtherIoError, desc : "Statement Execution Failed",
-							detail : Some(get_error(self.pCon.pDb, res))}) }
-		else { 	unsafe { sqlite3_reset(self.pStmt) }; Ok(unsafe { sqlite3_changes(self.pStmt) } as int) }
+		if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
+		let res = unsafe { sqlite3_step(self.pStmt) }; self.exec=true;
+		match res {
+			100 | 101 => Ok(unsafe { sqlite3_changes(self.pStmt) } as int),
+			_=> Err(IoError {	kind : OtherIoError, desc : "Statement Execution Failed",
+								detail : Some(get_error(self.pCon.pDb, res)) }) }
 		}
 		}
 	}
 	///Replace in the SQL Statement the '?' parameter by an int. The leftmost parameter has an index of 1.
-	pub fn set_int(&self, param_index : int, value : int) -> Option<IoError> {
+	pub fn set_int(&mut self, param_index : int, value : int) -> Option<IoError> {
 		match self.pCon.dbType {
 		SQLITE3 => {
+			if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
 			match unsafe { sqlite3_bind_int(self.pStmt, param_index as c_int, value as c_int) } {
 				0 => None,
 				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
@@ -92,9 +100,10 @@ impl<'a> Statement<'a> {
 		}
 	}
 	///Replace in the SQL Statement the '?' parameter by an i64. The leftmost parameter has an index of 1.
-	pub fn set_long(&self, param_index : int, value : i64) -> Option<IoError> {
+	pub fn set_long(&mut self, param_index : int, value : i64) -> Option<IoError> {
 		match self.pCon.dbType {
 		SQLITE3 => {
+			if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
 			match unsafe { sqlite3_bind_int64(self.pStmt, param_index as c_int, value) } {
 				0 => None,
 				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
@@ -104,9 +113,10 @@ impl<'a> Statement<'a> {
 	}
 
 	///Replace in the SQL Statement the '?' parameter by an f32. The leftmost parameter has an index of 1.
-	pub fn set_float(&self, param_index : int, value : f32) -> Option<IoError> {
+	pub fn set_float(&mut self, param_index : int, value : f32) -> Option<IoError> {
 		match self.pCon.dbType {
 		SQLITE3 => {
+			if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
 			match unsafe { sqlite3_bind_double(self.pStmt, param_index as c_int, value as f64) } {
 				0 => None,
 				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
@@ -116,9 +126,10 @@ impl<'a> Statement<'a> {
 	}
 
 	///Replace in the SQL Statement the '?' parameter by a double. The leftmost parameter has an index of 1.
-	pub fn set_double(&self, param_index : int, value : f64) -> Option<IoError> {
+	pub fn set_double(&mut self, param_index : int, value : f64) -> Option<IoError> {
 		match self.pCon.dbType {
 		SQLITE3 => {
+			if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
 			match unsafe { sqlite3_bind_double(self.pStmt, param_index as c_int, value) } {
 				0 => None,
 				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
@@ -128,9 +139,10 @@ impl<'a> Statement<'a> {
 	}
 
 	///Replace in the SQL Statement the '?' parameter by an &str. The leftmost parameter has an index of 1.
-	pub fn set_string(&self, param_index : int, value : &str) -> Option<IoError> {
+	pub fn set_string(&mut self, param_index : int, value : &str) -> Option<IoError> {
 		match self.pCon.dbType {
 		SQLITE3 => {
+			if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
 			let p : *extern fn(*c_void) = null();
 			match value.with_c_str(|c_str| unsafe { sqlite3_bind_text(self.pStmt, param_index as c_int, c_str, -1, p) }) {
 				0 => None,
@@ -145,6 +157,7 @@ impl<'a> Statement<'a> {
 	pub fn set_null(&mut self, param_index : int) -> Option<IoError> {
 		match self.pCon.dbType {
 		SQLITE3 => {
+			if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
 			match unsafe { sqlite3_bind_null(self.pStmt, param_index as c_int) } {
 				0 => None,
 				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
@@ -221,12 +234,12 @@ impl<'a> Iterator<IoResult<ResultSet<'a>>> for ResultSet<'a> {
 		SQLITE3 => {
 		if self.error { return None; }
 		let res = unsafe { sqlite3_step(self.pStmt.pStmt) };
-		if res == 100 	{ Some(Ok(*self)) } else
-		if res == 101	{ unsafe { sqlite3_reset(self.pStmt.pStmt) }; None } else
-		{	self.error = true;
-			unsafe { sqlite3_reset(self.pStmt.pStmt) };
-			Some (Err(IoError {	kind : OtherIoError, desc : "Row Fetch Failed",
-								detail : Some(get_error(self.pStmt.pCon.pDb, res))})) }
+		match res {
+			100 => Some(Ok(*self)),
+			101 => None,
+			_ => {	self.error = true;
+					Some (Err(IoError {	kind : OtherIoError, desc : "Row Fetch Failed",
+										detail : Some(get_error(self.pStmt.pCon.pDb, res))})) } }
 		}
 		}
 	}
@@ -242,9 +255,10 @@ impl Connection {
 		SQLITE3 => {
 		let pDb : *c_void = null();
 		let res = filename.with_c_str(|c_str| unsafe { sqlite3_open(c_str, &pDb) });
-		if res==0	{ 	Ok( Connection { dbType : dbType, pDb : pDb } ) }
-		else 		{ 	Err(IoError {	kind : ConnectionFailed, desc : "Database Connection Failed",
-								detail : Some(get_error(pDb, res))}) }				
+		match res {
+			0 => Ok( Connection { 	dbType : dbType, pDb : pDb } ),
+			_ => Err(IoError	{ 	kind : 	ConnectionFailed, desc : "Database Connection Failed",
+									detail : Some(get_error(pDb, res))}) }
 		}
 		}
 	}
@@ -258,9 +272,10 @@ impl Connection {
 		let pStmt  : *c_void = null();
 		let pzTail : *c_void = null();
 		let res = sql.with_c_str(|c_str| unsafe { sqlite3_prepare_v2(self.pDb, c_str, -1, &pStmt, &pzTail) });
-		if res==0	{	Ok(Statement { pCon : self, pStmt : pStmt }) }
-			else 	{	Err(IoError {	kind : InvalidInput, desc : "Statement Creation Failed",
-										detail : Some(get_error(self.pDb, res))}) }
+		match res {
+			0 => Ok(Statement { pCon : self, pStmt : pStmt, exec : false }),
+			_ => Err(IoError{	kind : InvalidInput, desc : "Statement Creation Failed",
+								detail : Some(get_error(self.pDb, res))}) }
 		}
 		}
 	}
@@ -276,10 +291,11 @@ impl Drop for Connection {
 }
 
 fn get_error(pDb : *c_void, errno : c_int) -> ~str {
-	let mut des = ~""; let mut det = ~"";
-	unsafe	{	let desC = CString::new(sqlite3_errmsg(pDb), false);
-				if desC.is_not_null() { match desC.as_str() { None => (), Some(s) => des=s.into_owned().clone() } } }
-	unsafe	{	let detC = CString::new(sqlite3_errstr(errno), false);
-				if detC.is_not_null() { match detC.as_str() { None => (), Some(s) => det=s.into_owned().clone() } } }
-	des.append(" (").append(errno.to_str()).append(":").append(det).append(")")
+	let mut buf = StrBuf::new();
+	unsafe	{	let c_str = CString::new(sqlite3_errmsg(pDb), false);
+				if c_str.is_not_null() { match c_str.as_str() { None => (), Some(s) => buf=buf.append(s) } } }
+	buf=buf.append(" (").append(errno.to_str()).append(":");
+	unsafe	{	let c_str = CString::new(sqlite3_errstr(errno), false);
+				if c_str.is_not_null() { match c_str.as_str() { None => (), Some(s) => buf=buf.append(s) } } }
+	buf.append(")").into_owned()
 }
