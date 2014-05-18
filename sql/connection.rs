@@ -54,12 +54,12 @@ pub struct ResultSet<'a> {
 
 impl<'a> Statement<'a> {
 	///Execute the SQL query and returns the result in an iterable ResultSet.
-	pub fn execute_query(&'a mut self) -> ~ResultSet<'a> {
+	pub fn execute_query(&'a mut self) -> ResultSet<'a> {
 		match self.pCon.dbType {
 		SQLITE3 => {
 		if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
 		self.exec=true;
-		~ResultSet { pStmt : self, error : false }
+		ResultSet { pStmt : self, error : false }
 		}
 		}
 	}
@@ -309,9 +309,9 @@ impl Drop for Connection {
 fn get_error(pDb : *c_void, errno : c_int) -> ~str {
 	let mut buf = StrBuf::new();
 	unsafe	{	let c_str = CString::new(sqlite3_errmsg(pDb), false);
-				if c_str.is_not_null() { match c_str.as_str() { None => (), Some(s) => buf=buf.append(s) } } }
-	buf=buf.append(" (").append(errno.to_str()).append(":");
+				if c_str.is_not_null() { match c_str.as_str() { None => (), Some(s) => buf=buf.append(s).append(" ") } } }
+	buf=buf.append("(").append(errno.to_str());
 	unsafe	{	let c_str = CString::new(sqlite3_errstr(errno), false);
-				if c_str.is_not_null() { match c_str.as_str() { None => (), Some(s) => buf=buf.append(s) } } }
+				if c_str.is_not_null() { match c_str.as_str() { None => (), Some(s) => buf=buf.append(":").append(s) } } }
 	buf.append(")").into_owned()
 }
