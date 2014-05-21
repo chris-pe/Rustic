@@ -57,8 +57,7 @@ impl<'a> Statement<'a> {
 	pub fn execute_query(&'a mut self) -> ResultSet<'a> {
 		match self.pCon.dbType {
 		SQLITE3 => {
-		if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
-		self.exec=true;
+		if self.exec { unsafe { sqlite3_reset(self.pStmt) }; } else { self.exec=true; }
 		ResultSet { pStmt : self, error : false }
 		}
 		}
@@ -67,12 +66,11 @@ impl<'a> Statement<'a> {
 	pub fn execute(&mut self) -> Option<IoError> {
 		match self.pCon.dbType {
 		SQLITE3 => {
-		if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
-		let res = unsafe { sqlite3_step(self.pStmt) }; self.exec=true;
-		match res {
+		if self.exec { unsafe { sqlite3_reset(self.pStmt) }; } else { self.exec=true; }
+		match unsafe { sqlite3_step(self.pStmt) } {
 			100 | 101 => None,
-			_=> Some (IoError {	kind : OtherIoError, desc : "Statement Execution Failed",
-								detail : Some(get_error(self.pCon.pDb, res))}) }
+			err => Some (IoError {	kind : OtherIoError, desc : "Statement Execution Failed",
+								detail : Some(get_error(self.pCon.pDb, err))}) }
 		}
 		}
 	}
@@ -81,12 +79,11 @@ impl<'a> Statement<'a> {
 	pub fn execute_update(&mut self) -> IoResult<int> {
 		match self.pCon.dbType {
 		SQLITE3 => { 
-		if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
-		let res = unsafe { sqlite3_step(self.pStmt) }; self.exec=true;
-		match res {
+		if self.exec { unsafe { sqlite3_reset(self.pStmt) }; } else { self.exec=true; }
+		match unsafe { sqlite3_step(self.pStmt) } {
 			100 | 101 => Ok(unsafe { sqlite3_changes(self.pStmt) } as int),
-			_=> Err(IoError {	kind : OtherIoError, desc : "Statement Execution Failed",
-								detail : Some(get_error(self.pCon.pDb, res)) }) }
+			err => Err(IoError {	kind : OtherIoError, desc : "Statement Execution Failed",
+								detail : Some(get_error(self.pCon.pDb, err)) }) }
 		}
 		}
 	}
@@ -184,7 +181,7 @@ impl<'a> Statement<'a> {
 
 impl<'a> ResultSet<'a> {
 	///Retrieve the column value as int with index <i>column_index</i>from the current row, the first column is 0.
-	pub fn get_int(&mut self, column_index : int) -> int {
+	pub fn get_int(&self, column_index : int) -> int {
 		match self.pStmt.pCon.dbType {
 		SQLITE3 => {
 		unsafe { sqlite3_column_int(self.pStmt.pStmt, column_index as c_int) as int} 
@@ -192,7 +189,7 @@ impl<'a> ResultSet<'a> {
 		}
 	}
 	///Retrieve the column value as i64 with index <i>column_index</i>from the current row, the first column is 0.
-	pub fn get_long(&mut self, column_index : int) -> i64 {
+	pub fn get_long(&self, column_index : int) -> i64 {
 		match self.pStmt.pCon.dbType {
 		SQLITE3 => {
 		unsafe { sqlite3_column_int64(self.pStmt.pStmt, column_index as c_int) } 
@@ -200,7 +197,7 @@ impl<'a> ResultSet<'a> {
 		}
 	}
 	///Retrieve the column value as float with index <i>column_index</i>from the current row, the first column is 0.
-	pub fn get_float(&mut self, column_index : int) -> f32 {
+	pub fn get_float(&self, column_index : int) -> f32 {
 		match self.pStmt.pCon.dbType {
 		SQLITE3 => {
 		unsafe { sqlite3_column_double(self.pStmt.pStmt, column_index as c_int) as f32} 
@@ -208,7 +205,7 @@ impl<'a> ResultSet<'a> {
 		}
 	}
 	///Retrieve the column value as double with index <i>column_index</i>from the current row, the first column is 0.
-	pub fn get_double(&mut self, column_index : int) -> f64 {
+	pub fn get_double(&self, column_index : int) -> f64 {
 		match self.pStmt.pCon.dbType {
 		SQLITE3 => {
 		unsafe { sqlite3_column_double(self.pStmt.pStmt, column_index as c_int) } 
@@ -216,7 +213,7 @@ impl<'a> ResultSet<'a> {
 		}
 	}
 	///Retrieve the column value as ~str with index <i>column_index</i>from the current row, the first column is 0.
-	pub fn get_string(&mut self, column_index : int) -> ~str {
+	pub fn get_string(&self, column_index : int) -> ~str {
 		match self.pStmt.pCon.dbType {
 		SQLITE3 => {
 		 	let c_str = unsafe { CString::new(sqlite3_column_text(self.pStmt.pStmt, column_index as c_int) as *i8, false) };
@@ -227,7 +224,7 @@ impl<'a> ResultSet<'a> {
 	}
 
 	///Retrieve the column value as an array of bytes <i>column_index</i>from the current row, the first column is 0.
-	pub fn get_blob(&mut self, column_index : int) -> Vec<u8> {
+	pub fn get_blob(&self, column_index : int) -> Vec<u8> {
 		match self.pStmt.pCon.dbType {
 		SQLITE3 => {
 		let p = unsafe { sqlite3_column_blob(self.pStmt.pStmt, column_index as c_int) };
@@ -249,13 +246,12 @@ impl<'a> Iterator<IoResult<ResultSet<'a>>> for ResultSet<'a> {
 		match self.pStmt.pCon.dbType {
 		SQLITE3 => {
 		if self.error { return None; }
-		let res = unsafe { sqlite3_step(self.pStmt.pStmt) };
-		match res {
+		match unsafe { sqlite3_step(self.pStmt.pStmt) } {
 			100 => Some(Ok(*self)),
 			101 => None,
-			_ => {	self.error = true;
+			err => {	self.error = true;
 					Some (Err(IoError {	kind : OtherIoError, desc : "Row Fetch Failed",
-										detail : Some(get_error(self.pStmt.pCon.pDb, res))})) } }
+										detail : Some(get_error(self.pStmt.pCon.pDb, err))})) } }
 		}
 		}
 	}
@@ -270,11 +266,10 @@ impl Connection {
 		match dbType {
 		SQLITE3 => {
 		let pDb : *c_void = null();
-		let res = filename.with_c_str(|c_str| unsafe { sqlite3_open(c_str, &pDb) });
-		match res {
+		match filename.with_c_str(|c_str| unsafe { sqlite3_open(c_str, &pDb) }) {
 			0 => Ok( Connection { 	dbType : dbType, pDb : pDb } ),
-			_ => Err(IoError	{ 	kind : 	ConnectionFailed, desc : "Database Connection Failed",
-									detail : Some(get_error(pDb, res))}) }
+			e => Err(IoError	{ 	kind : 	ConnectionFailed, desc : "Database Connection Failed",
+									detail : Some(get_error(pDb, e))}) }
 		}
 		}
 	}
@@ -287,11 +282,10 @@ impl Connection {
 		SQLITE3 => {
 		let pStmt  : *c_void = null();
 		let pzTail : *c_void = null();
-		let res = sql.with_c_str(|c_str| unsafe { sqlite3_prepare_v2(self.pDb, c_str, -1, &pStmt, &pzTail) });
-		match res {
+		match sql.with_c_str(|c_str| unsafe { sqlite3_prepare_v2(self.pDb, c_str, -1, &pStmt, &pzTail) }) {
 			0 => Ok(Statement { pCon : self, pStmt : pStmt, exec : false }),
-			_ => Err(IoError{	kind : InvalidInput, desc : "Statement Creation Failed",
-								detail : Some(get_error(self.pDb, res))}) }
+			e => Err(IoError{	kind : InvalidInput, desc : "Statement Creation Failed",
+								detail : Some(get_error(self.pDb, e))}) }
 		}
 		}
 	}
