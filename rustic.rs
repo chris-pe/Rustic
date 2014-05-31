@@ -21,7 +21,7 @@ pub mod util {
 pub mod sql {
 	pub use self::connection::Connection;
 	pub use self::connection::Statement;
-	pub use self::connection::ResultSet;
+	pub use self::connection::Cursor;
 	mod connection;
 	///Supported Databases
 	pub enum DbType {

@@ -55,29 +55,31 @@ fn main() {
 							Some(s) => println!("{}", s)
 						}
 					}
-					match db.prepare_statement("SELECT i,f,t,b FROM t where t is not null;") {
+					match db.prepare_statement("SELECT i,f,t,b FROM t where t like ?;") {
 						Ok(mut st) => {
+							st.set_string(1, "%o%");
 							for i in st.execute_query() {
 								match i {
-									Ok(mut s)  => println!("{}:{}:{}:{}",	s.get_long(0), s.get_double(1),
-																			s.get_string(2), s.get_blob(3) ),
+									Ok(s)  => println!("{}:{}:{}:{}",	s.get_long(0), s.get_double(1),
+																		s.get_string(2), s.get_blob(3) ),
 									Err(e) => match e.detail {
 										Some(s) => println!("{}", s),
 										None => ()
 									}
 								}
 							}
-							/*println!("----------------------------------------------------");
+							st.set_string(1, "%e%");
+							println!("----------------------------------------------------");
 							for i in st.execute_query() {
 								match i {
-									Ok(mut s)  => println!("{}:{}:{}", s.get_long(0),
-																		s.get_double(1), s.get_string(2) ),
+									Ok(s)  => println!("{}:{}:{}:{}", 	s.get_long(0), s.get_double(1),
+																		s.get_string(2), s.get_blob(3) ),
 									Err(e) => match e.detail {
 										Some(s) => println!("{}", s),
 										None => ()
 									}
 								}
-							}*/
+							}
 						},
 						Err(e) => match e.detail {
 							None => (),

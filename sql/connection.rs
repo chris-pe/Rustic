@@ -46,19 +46,19 @@ pub struct Statement<'a> {
 	exec  : bool
 }
 
-///ResultSet is used for representing a database query result.
-pub struct ResultSet<'a> {
-	pStmt : &'a Statement<'a>,
+///Cursor is used for browsing a database query result.
+pub struct Cursor<'a, 'b> {
+	pStmt : &'b Statement<'a>,
 	error : bool
 }
 
 impl<'a> Statement<'a> {
-	///Execute the SQL query and returns the result in an iterable ResultSet.
-	pub fn execute_query(&'a mut self) -> ResultSet<'a> {
+	///Execute the SQL query and returns the result in an iterable Cursor.
+	pub fn execute_query<'b>(&'b mut self) -> Cursor<'a, 'b> {
 		match self.pCon.dbType {
 		SQLITE3 => {
 		if self.exec { unsafe { sqlite3_reset(self.pStmt) }; } else { self.exec=true; }
-		ResultSet { pStmt : self, error : false }
+		Cursor { pStmt : self, error : false }
 		}
 		}
 	}
@@ -179,7 +179,7 @@ impl<'a> Statement<'a> {
 	}
 }
 
-impl<'a> ResultSet<'a> {
+impl<'a, 'b> Cursor<'a, 'b> {
 	///Retrieve the column value as int with index <i>column_index</i>from the current row, the first column is 0.
 	pub fn get_int(&self, column_index : int) -> int {
 		match self.pStmt.pCon.dbType {
@@ -236,13 +236,13 @@ impl<'a> ResultSet<'a> {
 	}
 }
 
-/// Allow to iterate ResultSet.
-impl<'a> Iterator<IoResult<ResultSet<'a>>> for ResultSet<'a> {
-	/// Returns the next row of the ResultSet.
+/// Allow to iterate Cursor.
+impl<'a, 'b> Iterator<IoResult<Cursor<'a, 'b>>> for Cursor<'a, 'b> {
+	/// Returns the next row of the Cursor.
 	///
-	///Returns a ResultSet if ok, or a <i>OtherIoError</i> IoError with (if available from the underlying database)
+	///Returns a Cursor if ok, or a <i>OtherIoError</i> IoError with (if available from the underlying database)
 	///in the <i>detail</i> field text that describes the error, result code, and text that describes the result code.
-	fn next(&mut self) -> Option<IoResult<ResultSet<'a>>> {
+	fn next(&mut self) -> Option<IoResult<Cursor<'a, 'b>>> {
 		match self.pStmt.pCon.dbType {
 		SQLITE3 => {
 		if self.error { return None; }
