@@ -4,7 +4,7 @@ use std::c_vec::CVec;
 use std::vec::Vec;
 use std::io::{IoResult, IoError, ConnectionFailed, InvalidInput, OtherIoError};
 use std::ptr::null;
-use sql::{DbType};
+use sql::{DbType, SQLITE3};
 
 #[link(name = "sqlite3")]
 extern {
@@ -212,13 +212,13 @@ impl<'a, 'b> Cursor<'a, 'b> {
 		}
 		}
 	}
-	///Retrieve the column value as ~str with index <i>column_index</i>from the current row, the first column is 0.
-	pub fn get_string(&self, column_index : int) -> ~str {
+	///Retrieve the column value as String with index <i>column_index</i>from the current row, the first column is 0.
+	pub fn get_string(&self, column_index : int) -> String {
 		match self.pStmt.pCon.dbType {
 		SQLITE3 => {
 		 	let c_str = unsafe { CString::new(sqlite3_column_text(self.pStmt.pStmt, column_index as c_int) as *i8, false) };
-			if c_str.is_null() { return ~""; };
-			match c_str.as_str() { None => ~"", Some(s) => s.to_owned() }
+			if c_str.is_null() { return "".to_string(); };
+			match c_str.as_str() { None => "".to_string(), Some(s) => s.to_string() }
 		}
 		}
 	}
@@ -264,13 +264,13 @@ impl Connection {
 	///in the <i>detail</i> field text that describes the error, result code, and text that describes the result code.
 	pub fn new(dbType : DbType, filename : &str) -> IoResult<Connection> {
 		match dbType {
-		SQLITE3 => {
-		let pDb : *c_void = null();
-		match filename.with_c_str(|c_str| unsafe { sqlite3_open(c_str, &pDb) }) {
-			0 => Ok( Connection { 	dbType : dbType, pDb : pDb } ),
-			e => Err(IoError	{ 	kind : 	ConnectionFailed, desc : "Database Connection Failed",
-									detail : Some(get_error(pDb, e))}) }
-		}
+			SQLITE3 => {
+				let pDb : *c_void = null();
+				match filename.with_c_str(|c_str| unsafe { sqlite3_open(c_str, &pDb) }) {
+					0 => Ok( Connection { 	dbType : SQLITE3, pDb : pDb } ),
+					e => Err(IoError	{ 	kind : 	ConnectionFailed, desc : "Database Connection Failed",
+											detail : Some(get_error(pDb, e))}) }
+			}
 		}
 	}
 	///Prepare a statement for executing SQL instructions.
@@ -295,17 +295,17 @@ impl Drop for Connection {
 	///The drop method is called when Connection goes out of scope, and therefore close properly the connection.
 	fn drop(&mut self) {
 		match self.dbType {
-			SQLITE3 => if self.pDb.is_not_null() { unsafe { sqlite3_close_v2(self.pDb); } }
+			SQLITE3 => { if self.pDb.is_not_null() { unsafe { sqlite3_close_v2(self.pDb); } } }
 		}
 	}
 }
 
-fn get_error(pDb : *c_void, errno : c_int) -> ~str {
-	let mut buf = StrBuf::new();
+fn get_error(pDb : *c_void, errno : c_int) -> String {
+	let mut buf = String::new();
 	unsafe	{	let c_str = CString::new(sqlite3_errmsg(pDb), false);
 				if c_str.is_not_null() { match c_str.as_str() { None => (), Some(s) => buf=buf.append(s).append(" ") } } }
-	buf=buf.append("(").append(errno.to_str());
+	buf=buf.append("(").append(errno.to_str().as_slice());
 	unsafe	{	let c_str = CString::new(sqlite3_errstr(errno), false);
 				if c_str.is_not_null() { match c_str.as_str() { None => (), Some(s) => buf=buf.append(":").append(s) } } }
-	buf.append(")").into_owned()
+	buf.append(")")
 }
