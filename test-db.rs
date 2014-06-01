@@ -1,10 +1,10 @@
 extern crate rustic;
 
-use rustic::sql::{Connection,SQLITE3};
+use rustic::sql::{Connection,SQLite3};
 //use std::io::{IoResult};
 
 fn main() {
-	match Connection::new(SQLITE3, "test-db.db") {
+	match Connection::new(SQLite3, "test-db.db") {
 		Ok(db) => {
 					match db.prepare_statement("CREATE TABLE t(i INTEGER PRIMARY KEY, f REAL, t TEXT, b BLOB);") {
 					//match db.prepare_statement("CREATE TABLE t(i INTEGER PRIMARY KEY, f REAL, t TEXT);") {

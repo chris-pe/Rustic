@@ -25,6 +25,6 @@ pub mod sql {
 	mod connection;
 	///Supported Databases
 	pub enum DbType {
-		SQLITE3
+		SQLite3
 	}
 }
