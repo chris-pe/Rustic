@@ -153,7 +153,7 @@ impl<'a> Statement<'a> {
 		}
 	}
 	///Replace in the SQL Statement the '?' parameter by an &[u8]. The leftmost parameter has an index of 1.
-	pub fn set_blob(&mut self, param_index : int, value : Vec<u8>) -> Option<IoError> {
+	pub fn set_blob(&mut self, param_index : int, value : &[u8]) -> Option<IoError> {
 		match self.pCon.dbType {
 		SQLite3 => {
 			if self.exec { unsafe { sqlite3_reset(self.pStmt) }; self.exec=false; }
@@ -230,7 +230,7 @@ impl<'a, 'b> Cursor<'a, 'b> {
 		let p = unsafe { sqlite3_column_blob(self.pStmt.pStmt, column_index as c_int) };
 		let n = unsafe { sqlite3_column_bytes(self.pStmt.pStmt, column_index as c_int) };
 		let c_vec = unsafe { CVec::new(p, n as uint) };
-		Vec::from_slice(c_vec.as_slice()).clone()
+		Vec::from_slice(c_vec.as_slice())
 		}
 		}
 	}

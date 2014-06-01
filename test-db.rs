@@ -27,27 +27,27 @@ fn main() {
 							match st.set_long(1,10) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.set_double(2,10.1) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.set_string(3, "one") { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_blob(4, vec![1, 2, 3]) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							match st.set_blob(4, &[1, 2, 3]) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
 							match st.set_long(1,15) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.set_double(2,15.1) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.set_null(3) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_blob(4, vec![1, 2, 3]) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							match st.set_blob(4, &[4, 5, 6]) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
 							match st.set_long(1,20) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.set_double(2,20.2) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.set_string(3, "two") { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_blob(4, vec![1, 2, 3]) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							match st.set_blob(4, &[7, 8, 9]) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
 							match st.set_long(1,25) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.set_double(2,25.1) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.set_null(3) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_blob(4, vec![1, 2, 3]) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							match st.set_blob(4, &[10, 11, 12]) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
 							match st.set_long(1,30) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.set_double(2,30.3) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.set_string(3, "three") { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_blob(4, vec![1, 2, 3]) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
+							match st.set_blob(4, &[13, 14, 15]) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
 							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
 						},
 						Err(e) => match e.detail {
