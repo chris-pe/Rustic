@@ -99,18 +99,18 @@ impl Properties {
 	</ul>
 	*/
 	pub fn load<T : Reader>(&mut self,  reader : T)-> Option<IoError> {
-		let mut multi = "".to_string();
+		let mut multi = String::new();
 		for line in BufferedReader::new(reader).lines() {
 			match line {
 				Ok(l) => {
 					multi = multi.append(l.as_slice().trim_left());
-					if multi.as_slice().starts_with("#") || multi.as_slice().starts_with("!") { multi="".to_string(); continue; } // Comment line
+					if multi.as_slice().starts_with("#") || multi.as_slice().starts_with("!") { multi.clear(); continue; } // Comment line
 
 					if multi.as_slice().ends_with("\n") {
 						if multi.as_slice().ends_with("\r\n") { multi=multi.as_slice().slice_to(multi.len()-2).into_string(); } // Line ends with '\r\n'
 							else { multi=multi.as_slice().slice_to(multi.len()-1).into_string(); } // Line ends with '\n'
 					}
-					if multi.len()==0 { multi="".to_string(); continue; } //Empty line
+					if multi.len()==0 { multi.clear(); continue; } //Empty line
 					
 					// line finishing with an odd number of '\' is a multiline
 					let mut esc = false;
@@ -136,7 +136,7 @@ impl Properties {
 				}
 				Err(e) => { return Some(e); }
 			}
-			multi="".to_string();
+			multi.clear();
 		}
 		None
 	}
@@ -229,7 +229,7 @@ fn encode_chars<'a>(s : &str, isKey : bool) -> String {
 		idx+=c.len_utf8_bytes();
 	}
 	if isKey && (s.starts_with("#") || s.starts_with("!")) {
-		buf="\\".to_string().append(buf.as_slice());
+		buf=String::from_str("\\").append(buf.as_slice());
 	}
 	buf
 }
