@@ -217,8 +217,8 @@ impl<'a, 'b> Cursor<'a, 'b> {
 		match self.pStmt.pCon.dbType {
 		SQLite3 => {
 		 	let c_str = unsafe { CString::new(sqlite3_column_text(self.pStmt.pStmt, column_index as c_int) as *i8, false) };
-			if c_str.is_null() { return "".to_string(); };
-			match c_str.as_str() { None => "".to_string(), Some(s) => s.to_string() }
+			if c_str.is_null() { return String::new(); };
+			match c_str.as_str() { None => String::new(), Some(s) => String::from_str(s) }
 		}
 		}
 	}
@@ -299,6 +299,13 @@ impl Drop for Connection {
 		}
 	}
 }
+
+/*
+//https://github.com/mozilla/rust/issues/13853
+impl<'a> Drop for Statement<'a> {
+	fn drop(&mut self) {}
+}
+*/
 
 fn get_error(pDb : *c_void, errno : c_int) -> String {
 	let mut buf = String::new();
