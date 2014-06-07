@@ -1,4 +1,4 @@
-﻿use collections::hashmap::{HashMap, Keys, Entries, Values, MutEntries};
+﻿use std::collections::hashmap::{HashMap, Keys, Entries, Values, MutEntries};
 use std::io::{BufferedReader, BufferedWriter, IoError};
 
 ///Contains a list of properties. A property is a key-value pair.
