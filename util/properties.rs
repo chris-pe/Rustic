@@ -17,7 +17,7 @@ impl Map<String, String> for Properties {
 	}
 }
 
-impl Container for Properties {
+impl Collection for Properties {
 	///Return the number of properties.
 	fn len(&self) -> uint {
 		self.props.len()
