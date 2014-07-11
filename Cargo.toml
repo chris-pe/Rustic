@@ -1,13 +1,9 @@
 [package]
 
-name = "test-db"
-version = "0.1.0"
-authors = [ "christophe.pedretti@gmail.com" ]
+name = "rustic"
+version = "0.0.1"
+authors = ["Christophe Pedretti <christophe.pedretti@gmail.com>"]
 
-[[bin]]
+[[lib]]
 
-name = "test-db" # the name of the executable to generate
-
-[dependencies.rustic]
-
-git = "https://github.com/chris-pe/Rustic.git"
+name = "rustic"
