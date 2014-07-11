@@ -311,7 +311,7 @@ fn get_error(pDb : *const c_void, errno : c_int) -> String {
 	let mut buf = String::new();
 	unsafe	{	let c_str = CString::new(sqlite3_errmsg(pDb), false);
 				if c_str.is_not_null() { match c_str.as_str() { None => (), Some(s) => buf=buf.append(s).append(" ") } } }
-	buf=buf.append("(").append(errno.to_str().as_slice());
+	buf=buf.append("(").append(errno.to_string().as_slice());
 	unsafe	{	let c_str = CString::new(sqlite3_errstr(errno), false);
 				if c_str.is_not_null() { match c_str.as_str() { None => (), Some(s) => buf=buf.append(":").append(s) } } }
 	buf.append(")")
