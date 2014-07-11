@@ -7,4 +7,3 @@ authors = ["Christophe Pedretti <christophe.pedretti@gmail.com>"]
 [[lib]]
 
 name = "rustic"
-path = "src/rustic2.rs"
