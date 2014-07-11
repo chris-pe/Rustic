@@ -1,12 +1,10 @@
-env:
-  global:
-  - secure: YbEh5J+epBZSO8lDkVlj9VOBBRzBzA5UnduIRU1VPCuZgr2IHJbk1gvcNMjktgl9uVC8atU3siY7HHMNA8bnNkkPekNa0zyMDdDKXKWR16p2QduJmHxBM6hydfPpytJbtWqM7aIfZ7+nxgygicAf12QhPH3GSRxhUhY3tfJ7fvU=
 before_install:
-  - yes | sudo add-apt-repository ppa:hansjorg/rust
-  - sudo apt-get update
+  - sudo add-apt-repository --yes ppa:hansjorg/rust
+  - sudo add-apt-repository --yes ppa:cmrx64/cargo
+  - sudo apt-get update -qq
 install:
-  - sudo apt-get install rust-nightly
+  - sudo apt-get install -qq rust-nightly cargo
 script:
-  - export LD_LIBRARY_PATH="/usr/lib"; rustc rustic.rs && rustdoc rustic.rs
+  - cargo build
 after_script:
   - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
