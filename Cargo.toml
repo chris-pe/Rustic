@@ -2,7 +2,7 @@
 
 name = "rustic"
 version = "0.0.1"
-authors = [ "Christophe Pedretti <christophe.pedretti@gmail.com>" ]
+authors = [ "christophe.pedretti@gmail.com" ]
 
 [[lib]]
 
