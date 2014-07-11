@@ -1,6 +1,6 @@
 env:
   global:
-    - secure: sxlp7NZv6PyXhlcgzGhN11NmK8SP/3ktCujHiG5hXFGuTXfjJqWeErXWLrRpKQAEev9uujfUsaQtXltRD5Qlw1P7JVWznGJKhlbqa9sdruptPIlS9bn2ecEKx+FUd6dLkDAtM66QjK7vHaOD4AQPYNXZqOa5O+3OWCOkAwGnk/4=
+    - secure: lsoUaG7+Cb6atKRmBrcA0IKEIwD/EPvgRROZiDq1d/tCs/KBZWUZDfDnwTFEGjC46AFWhLDWOF5uvsM7cbcB1iuOAlxlN3DUpNZ/TFnITXXvKOIFk82TTjtdCmbCYINhmoxy2pFUi+2EMANCaOACA0SOHPv+2eLoeCb/7J5xLmg=
 before_install:
   - sudo add-apt-repository --yes ppa:hansjorg/rust
   - sudo add-apt-repository --yes ppa:cmrx64/cargo
