@@ -1,6 +1,6 @@
 env:
   global:
-    - secure: wIMcZ6nwvjGNw8qdMObEoiWYoKNkkE7bwyEV/IvWDOxvtbec/4ItKfmAwBdrw5L/fkMeSpSWnXokICSwUs2HRdymWUizvS2dm1wbOLfEq6pJfB4MZ+dHzXAioKXakJLn1uIRG+18qo/kDgv8KL7haW++ssdTXN2Zy+qsWRNbveE=
+    - secure: sxlp7NZv6PyXhlcgzGhN11NmK8SP/3ktCujHiG5hXFGuTXfjJqWeErXWLrRpKQAEev9uujfUsaQtXltRD5Qlw1P7JVWznGJKhlbqa9sdruptPIlS9bn2ecEKx+FUd6dLkDAtM66QjK7vHaOD4AQPYNXZqOa5O+3OWCOkAwGnk/4=
 before_install:
   - sudo add-apt-repository --yes ppa:hansjorg/rust
   - sudo add-apt-repository --yes ppa:cmrx64/cargo
@@ -8,7 +8,6 @@ before_install:
 install:
   - sudo apt-get install -qq rust-nightly cargo
   - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/rust/rust-nightly/lib
-  - rustc -v
 script:
   - cargo build
   - rustdoc src/rustic.rs
