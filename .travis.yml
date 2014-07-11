@@ -7,6 +7,6 @@ before_install:
 install:
   - sudo apt-get install rust-nightly
 script:
-  - rustc rustic.rs && rustdoc rustic.rs
+  - export LD_LIBRARY_PATH="/usr/bin"; rustc rustic.rs && rustdoc rustic.rs
 after_script:
   - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
