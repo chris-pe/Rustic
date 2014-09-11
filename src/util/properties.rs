@@ -202,7 +202,7 @@ fn decode_chars(s : &str) -> String {
 	buf
 }
 
-fn encode_chars<'a>(s : &str, isKey : bool) -> String {
+fn encode_chars<'a>(s : &str, is_key : bool) -> String {
 	let mut buf = String::from_str(s);
 	let mut esc=true;
 	let mut idx = 0u;
@@ -223,12 +223,12 @@ fn encode_chars<'a>(s : &str, isKey : bool) -> String {
 					}
 		}
 		else 	{	if c=='\\' { buf=buf.as_slice().slice_to(idx).to_string().append("\\").append(buf.as_slice().slice_from(idx)); idx+=1; }
-					if !isKey { esc=false; }
+					if !is_key { esc=false; }
 					else if c=='=' || c==':' { buf=buf.as_slice().slice_to(idx).to_string().append("\\").append(buf.as_slice().slice_from(idx)); idx+=1; }
 				}
 		idx+=c.len_utf8_bytes();
 	}
-	if isKey && (s.starts_with("#") || s.starts_with("!")) {
+	if is_key && (s.starts_with("#") || s.starts_with("!")) {
 		buf=String::from_str("\\").append(buf.as_slice());
 	}
 	buf
