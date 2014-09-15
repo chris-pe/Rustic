@@ -1,3 +1,5 @@
 *.rlib
 *.exe
 *.dll
+Cargo.lock
+target
