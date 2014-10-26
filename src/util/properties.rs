@@ -103,7 +103,7 @@ impl Properties {
 		for line in BufferedReader::new(reader).lines() {
 			match line {
 				Ok(l) => {
-					multi = multi.append(l.as_slice().trim_left());
+					multi.push_str(l.as_slice().trim_left());
 					if multi.as_slice().starts_with("#") || multi.as_slice().starts_with("!") { multi.clear(); continue; } // Comment line
 
 					if multi.as_slice().ends_with("\n") {
@@ -149,11 +149,13 @@ impl Properties {
 		let mut buf = BufferedWriter::new(writer);
 		for kv in self.props.iter() {
 			match kv {
-				(k,v) => match buf.write_line(encode_chars(k.as_slice(), true)
-						.append("=").append(encode_chars(v.as_slice(), false).as_slice()).as_slice()) {
-							Ok(_)  => continue,
-							Err(e) => { return Some(e); }
-				}
+				(k,v) => {  let mut line = String::from_str(encode_chars(k.as_slice(), true).as_slice());
+							line.push('=');
+							line.push_str(encode_chars(v.as_slice(), false).as_slice());
+							match buf.write_line(line.as_slice()) 	{ 	Ok(_)  => continue,
+															Err(e) => { return Some(e); }
+														}
+						}
 			}
 		}
 		None
@@ -176,8 +178,8 @@ impl Properties {
 	
 	///An iterator visiting all properties key-value pairs in arbitrary order, with mutable references to the values.
 	///Iterator element type is (&'a String, &'a mut String).
-	pub fn mut_iter<'a>(&'a mut self) -> MutEntries<'a, String, String> {
-		self.props.mut_iter()
+	pub fn iter_mut<'a>(&'a mut self) -> MutEntries<'a, String, String> {
+		self.props.iter_mut()
 	}
 }
 
@@ -188,12 +190,12 @@ fn decode_chars(s : &str) -> String {
 	for mut c in s.chars() {
 		if esc {
 			match c {
-				't' => { buf=buf.as_slice().slice_to(idx).to_string().append("\t").append(buf.as_slice().slice_from(idx+2)); esc=false; }
-				'f' => { buf=buf.as_slice().slice_to(idx).to_string().append("\x0c").append(buf.as_slice().slice_from(idx+2)); esc=false; }
-				'r' => { buf=buf.as_slice().slice_to(idx).to_string().append("\r").append(buf.as_slice().slice_from(idx+2)); esc=false; }
-				'n' => { buf=buf.as_slice().slice_to(idx).to_string().append("\n").append(buf.as_slice().slice_from(idx+2)); esc=false; }
-				'\\'=> { buf=buf.as_slice().slice_to(idx).to_string().append(buf.as_slice().slice_from(idx+1)); c=' '; esc=false; }
-				 _  => { buf=buf.as_slice().slice_to(idx).to_string().append(buf.as_slice().slice_from(idx+1)); esc=false; }
+				't' => { buf.remove(idx); buf.remove(idx); buf.insert(idx, '\t'); esc=false; }
+				'f' => { buf.remove(idx); buf.remove(idx); buf.insert(idx, '\x0c'); esc=false; }
+				'r' => { buf.remove(idx); buf.remove(idx); buf.insert(idx, '\r'); esc=false; }
+				'n' => { buf.remove(idx); buf.remove(idx); buf.insert(idx, '\n'); esc=false; }
+				'\\'=> { buf.remove(idx); c=' '; esc=false; }
+				 _  => { buf.remove(idx); esc=false; }
 			}
 		}
 		if c=='\\' { esc=true; continue; }
@@ -209,27 +211,27 @@ fn encode_chars<'a>(s : &str, is_key : bool) -> String {
 	for c in s.chars() {
 		if c.is_whitespace() 	{
 			if esc 	{ 	match c {
-							'\t'   => { buf=buf.as_slice().slice_to(idx).to_string().append("\\t").append(buf.as_slice().slice_from(idx+1)); idx+=1; }
-							'\x0c' => { buf=buf.as_slice().slice_to(idx).to_string().append("\\f").append(buf.as_slice().slice_from(idx+1)); idx+=1; }
-							'\r'   => { buf=buf.as_slice().slice_to(idx).to_string().append("\\r").append(buf.as_slice().slice_from(idx+1)); idx+=1; }
-							'\n'   => { buf=buf.as_slice().slice_to(idx).to_string().append("\\n").append(buf.as_slice().slice_from(idx+1)); idx+=1; }
-							_      => { buf=buf.as_slice().slice_to(idx).to_string().append("\\").append(buf.as_slice().slice_from(idx)); idx+=1; }
+							'\t'   => { buf.remove(idx); buf.insert(idx, 't'); buf.insert(idx, '\\'); idx+=1; }
+							'\x0c' => { buf.remove(idx); buf.insert(idx, 'f'); buf.insert(idx, '\\'); idx+=1; }
+							'\r'   => { buf.remove(idx); buf.insert(idx, 'r'); buf.insert(idx, '\\'); idx+=1; }
+							'\n'   => { buf.remove(idx); buf.insert(idx, 'n'); buf.insert(idx, '\\'); idx+=1; }
+							_      => { buf.insert(idx, '\\'); idx+=1; }
 						}
 			} else 	{ 	match c {
-							'\r' => { buf=buf.as_slice().slice_to(idx).to_string().append("\\r").append(buf.as_slice().slice_from(idx+1)); idx+=1; }
-							'\n' => { buf=buf.as_slice().slice_to(idx).to_string().append("\\n").append(buf.as_slice().slice_from(idx+1)); idx+=1; }
+							'\r' => { buf.remove(idx); buf.insert(idx, 'r'); buf.insert(idx, '\\'); idx+=1; }
+							'\n' => { buf.remove(idx); buf.insert(idx, 'n'); buf.insert(idx, '\\'); idx+=1; }
 							_    => ()
 						}
 					}
 		}
-		else 	{	if c=='\\' { buf=buf.as_slice().slice_to(idx).to_string().append("\\").append(buf.as_slice().slice_from(idx)); idx+=1; }
+		else 	{	if c=='\\' { buf.insert(idx, '\\'); idx+=1; }
 					if !is_key { esc=false; }
-					else if c=='=' || c==':' { buf=buf.as_slice().slice_to(idx).to_string().append("\\").append(buf.as_slice().slice_from(idx)); idx+=1; }
+					else if c=='=' || c==':' { buf.insert(idx, '\\'); idx+=1; }
 				}
 		idx+=c.len_utf8_bytes();
 	}
 	if is_key && (s.starts_with("#") || s.starts_with("!")) {
-		buf=String::from_str("\\").append(buf.as_slice());
+		buf.insert(0, '\\');
 	}
 	buf
 }

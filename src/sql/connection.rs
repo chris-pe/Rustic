@@ -228,8 +228,8 @@ impl<'a, 'b> Cursor<'a, 'b> {
 		SQLite3 => {
 		let p = unsafe { sqlite3_column_blob(self.p_stmt.p_stmt, column_index as c_int) };
 		let n = unsafe { sqlite3_column_bytes(self.p_stmt.p_stmt, column_index as c_int) };
-		let c_vec = unsafe { CVec::new(p, n as uint) };
-		Vec::from_slice(c_vec.as_slice())
+		let mut v = Vec::new(); v.push_all(unsafe { CVec::new(p, n as uint) }.as_slice());
+		v
 		}
 		}
 	}
@@ -308,8 +308,9 @@ impl<'a> Drop for Statement<'a> {
 
 fn get_error(p_db : *const c_void, errno : c_int) -> String {
 	let mut buf = String::new();
-	match unsafe{CString::new(sqlite3_errmsg(p_db), false)}.as_str() { None => (), Some(s) => buf=buf.append(s).append(" ") }
-	buf=buf.append("(").append(errno.to_string().as_slice());
-	match unsafe{CString::new(sqlite3_errstr(errno), false)}.as_str() { None => (), Some(s) => buf=buf.append(":").append(s) }
-	buf.append(")")
+	match unsafe{CString::new(sqlite3_errmsg(p_db), false)}.as_str() { None => (), Some(s) => { buf.push_str(s); buf.push(' '); } }
+	buf.push('('); buf.push_str(errno.to_string().as_slice());
+	match unsafe{CString::new(sqlite3_errstr(errno), false)}.as_str() { None => (), Some(s) => { buf.push(':'); buf.push_str(s); } }
+	buf.push(')');
+	buf
 }
