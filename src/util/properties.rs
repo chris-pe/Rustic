@@ -13,53 +13,53 @@ impl Properties {
 	}
 	
 	///Return the number of properties.
-	fn len(&self) -> uint {
+	pub fn len(&self) -> uint {
 		self.props.len()
 	}	
 	///Return true if the properties list is empty
-	fn is_empty(&self) -> bool {
+	pub fn is_empty(&self) -> bool {
 		self.props.is_empty()
 	}
 
 	///Remove all properties.
-	fn clear(&mut self) {
+	pub fn clear(&mut self) {
 		self.props.clear();
 	}
 	
 	///Get a property value giving its name. Return None if property does not exist.
-	fn find<'a>(&'a self, key : &String) -> Option<&'a String> {
+	pub fn find<'a>(&'a self, key : &String) -> Option<&'a String> {
 		self.props.find(key)
 	}
 	
 	///Return true if a property value exists for the specified key
-	fn contains_key(&self, key: &String) -> bool {
+	pub fn contains_key(&self, key: &String) -> bool {
 		self.props.contains_key(key)
 	}
 	
 	///Insert a property into the list. If the property already had a value present in the list, that value is returned.
 	///Otherwise None is returned.
-	fn swap(&mut self, key: String, value: String) -> Option<String> {
+	pub fn swap(&mut self, key: String, value: String) -> Option<String> {
 		self.props.swap(key, value)
 	}
 
 	///Removes a property from the list, returning the value of the property if it was previously in the list.
-	fn pop(&mut self, key: &String) -> Option<String> {
+	pub fn pop(&mut self, key: &String) -> Option<String> {
 		self.props.pop(key)
 	}
 
 	///Return a mutable reference to the value corresponding to the property
-	fn find_mut<'a>(&'a mut self, key: &String) -> Option<&'a mut String> {
+	pub fn find_mut<'a>(&'a mut self, key: &String) -> Option<&'a mut String> {
 		self.props.find_mut(key)
 	}
 
 	///Insert a property into the list. An existing value for a property is replaced by the new value.
 	///Return true if the property did not already exist in the list.
-	fn insert(&mut self, key: String, value: String) -> bool {
+	pub fn insert(&mut self, key: String, value: String) -> bool {
 		self.props.insert(key, value)
 	}
 
 	/// Remove a property from the list. Return true if the property was present in the list, otherwise false.
-	fn remove(&mut self, key: &String) -> bool {
+	pub fn remove(&mut self, key: &String) -> bool {
 		self.props.remove(key)
 	}
 	
