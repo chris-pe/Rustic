@@ -6,18 +6,12 @@ pub struct Properties {
 	props : HashMap<String, String>
 }
 
-impl Map<String, String> for Properties {
-	///Get a property value giving its name. Return None if property does not exist.
-	fn find<'a>(&'a self, key : &String) -> Option<&'a String> {
-		self.props.find(key)
-	}	
-	///Return true if a property value exists for the specified key
-	fn contains_key(&self, key: &String) -> bool {
-		self.props.contains_key(key)
+impl Properties {
+	/// Create an empty properties list.
+	pub fn new() -> Properties {
+		Properties { props : HashMap::new() }
 	}
-}
-
-impl Collection for Properties {
+	
 	///Return the number of properties.
 	fn len(&self) -> uint {
 		self.props.len()
@@ -26,16 +20,22 @@ impl Collection for Properties {
 	fn is_empty(&self) -> bool {
 		self.props.is_empty()
 	}
-}
 
-impl Mutable for Properties {
 	///Remove all properties.
 	fn clear(&mut self) {
 		self.props.clear();
 	}
-}
-
-impl MutableMap<String, String> for Properties {
+	
+	///Get a property value giving its name. Return None if property does not exist.
+	fn find<'a>(&'a self, key : &String) -> Option<&'a String> {
+		self.props.find(key)
+	}
+	
+	///Return true if a property value exists for the specified key
+	fn contains_key(&self, key: &String) -> bool {
+		self.props.contains_key(key)
+	}
+	
 	///Insert a property into the list. If the property already had a value present in the list, that value is returned.
 	///Otherwise None is returned.
 	fn swap(&mut self, key: String, value: String) -> Option<String> {
@@ -61,13 +61,6 @@ impl MutableMap<String, String> for Properties {
 	/// Remove a property from the list. Return true if the property was present in the list, otherwise false.
 	fn remove(&mut self, key: &String) -> bool {
 		self.props.remove(key)
-	}
-}
-
-impl Properties {
-	/// Create an empty properties list.
-	pub fn new() -> Properties {
-		Properties { props : HashMap::new() }
 	}
 	
 	/// Load properties from an UTF-8 input character stream (for example, but not restricted to, file).
