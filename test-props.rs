@@ -8,7 +8,7 @@ fn main() {
 	let pr = Path::new("test-props-in.properties");
 	let fr = match File::open_mode(&pr, Open, Read) {
 		Ok(f) => f,
-		Err(e) => fail!("file error: {}", e),
+		Err(e) => panic!("file error: {}", e),
 	};
 
 	let mut props = Properties::new();
@@ -23,7 +23,7 @@ fn main() {
 	let pw = Path::new("test-props-out.properties");
 	let fw = match File::open_mode(&pw, Truncate, Write) {
 		Ok(f) => f,
-		Err(e) => fail!("file error: {}", e),
+		Err(e) => panic!("file error: {}", e),
 	};
 	
 	props.store(fw);
