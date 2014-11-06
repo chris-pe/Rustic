@@ -96,36 +96,37 @@ impl Properties {
 		for line in BufferedReader::new(reader).lines() {
 			match line {
 				Ok(l) => {
-					multi.push_str(l.as_slice().trim_left());
-					if multi.as_slice().starts_with("#") || multi.as_slice().starts_with("!") { multi.clear(); continue; } // Comment line
+					let mut l_str=l.as_slice().trim_left();
+					if l_str.starts_with("#") || l_str.starts_with("!") { continue; } // Comment line
 
-					if multi.as_slice().ends_with("\n") {
-						if multi.as_slice().ends_with("\r\n") { multi=multi.as_slice().slice_to(multi.len()-2).into_string(); } // Line ends with '\r\n'
-							else { multi=multi.as_slice().slice_to(multi.len()-1).into_string(); } // Line ends with '\n'
+					if l_str.ends_with("\n") {
+						if l_str.ends_with("\r\n") { l_str=l_str.slice_to(l_str.len()-2); } // Line ends with '\r\n'
+							else { l_str=l_str.slice_to(l_str.len()-1); } // Line ends with '\n'
 					}
-					if multi.len()==0 { multi.clear(); continue; } //Empty line
-					
+					if l_str.len()==0 { continue; } //Empty line
+
 					// line finishing with an odd number of '\' is a multiline
 					let mut esc = false;
-					for c in multi.as_slice().chars().rev() {
+					for c in l_str.chars().rev() {
 						if c=='\\' { esc=!esc; } else { break; }
 					}
-					if esc { multi = multi.as_slice().slice_to(multi.len()-1).to_string(); continue; }
+					if esc { multi.push_str(l_str.slice_to(l_str.len()-1)); continue; }
+					if !multi.is_empty() { multi.push_str(l_str); l_str=multi.as_slice(); }
 
 					// determination of the key
 					esc=false;
 					let mut idx = 0u;							
-					for c in multi.as_slice().chars() {
+					for c in l_str.chars() {
 						if c=='\\' { esc=true; idx+=1; continue; }
 						if !esc && (c.is_whitespace() || c=='=' || c==':') { break; } 
 						esc=false; idx+=c.len_utf8_bytes();
 					}
-					let key = multi.as_slice().slice_to(idx).into_string();
+					let key = l_str.slice_to(idx).into_string();
 					
-					multi = multi.as_slice().slice_from(idx).to_string(); multi = multi.as_slice().trim_left().to_string();
-					if multi.as_slice().starts_with("=") || multi.as_slice().starts_with(":") { 	multi=multi.as_slice().slice_from(1).into_string();
-																			multi = multi.as_slice().trim_left().into_string(); }					
-					self.props.insert(decode_chars(key.as_slice()), decode_chars(multi.as_slice()));
+					l_str = l_str.slice_from(idx); l_str = l_str.trim_left();
+					if l_str.starts_with("=") || l_str.starts_with(":") { 	l_str = l_str.slice_from(1);
+																			l_str = l_str.trim_left(); }					
+					self.props.insert(decode_chars(key.as_slice()), decode_chars(l_str));
 				}
 				Err(e) => { return Some(e); }
 			}
