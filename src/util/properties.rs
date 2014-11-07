@@ -27,8 +27,8 @@ impl Properties {
 	}
 	
 	///Get a property value giving its name. Return None if property does not exist.
-	pub fn find<'a>(&'a self, key : &String) -> Option<&'a String> {
-		self.props.find(key)
+	pub fn get<'a>(&'a self, key : &String) -> Option<&'a String> {
+		self.props.get(key)
 	}
 	
 	///Return true if a property value exists for the specified key
@@ -36,30 +36,20 @@ impl Properties {
 		self.props.contains_key(key)
 	}
 	
-	///Insert a property into the list. If the property already had a value present in the list, that value is returned.
-	///Otherwise None is returned.
-	pub fn swap(&mut self, key: String, value: String) -> Option<String> {
-		self.props.swap(key, value)
-	}
-
-	///Removes a property from the list, returning the value of the property if it was previously in the list.
-	pub fn pop(&mut self, key: &String) -> Option<String> {
-		self.props.pop(key)
-	}
-
 	///Return a mutable reference to the value corresponding to the property
-	pub fn find_mut<'a>(&'a mut self, key: &String) -> Option<&'a mut String> {
-		self.props.find_mut(key)
+	pub fn get_mut<'a>(&'a mut self, key: &String) -> Option<&'a mut String> {
+		self.props.get_mut(key)
 	}
 
 	///Insert a property into the list. An existing value for a property is replaced by the new value.
-	///Return true if the property did not already exist in the list.
-	pub fn insert(&mut self, key: String, value: String) -> bool {
+	///If the property already had a value, that value is returned. Otherwise, None is returned.
+	pub fn insert(&mut self, key: String, value: String) -> Option<String> {
 		self.props.insert(key, value)
 	}
 
-	/// Remove a property from the list. Return true if the property was present in the list, otherwise false.
-	pub fn remove(&mut self, key: &String) -> bool {
+	///Remove a property from the list.
+	///If the property was previously defined, its value is returned.  Otherwise, None is returned.
+	pub fn remove(&mut self, key: &String) -> Option<String> {
 		self.props.remove(key)
 	}
 	
