@@ -1,8 +1,10 @@
 ﻿use libc::{c_int, c_char, c_uchar, c_double,c_void};
-use std::c_str::CString;
-use std::c_vec::CVec;
+use std::ffi;
+use std::str;
+use std::ffi::CString;
+//use std::c_vec::CVec;
 use std::vec::Vec;
-use std::io::{IoResult, IoError, ConnectionFailed, InvalidInput, OtherIoError};
+use std::old_io::{IoResult, IoError, ConnectionFailed, InvalidInput, OtherIoError};
 use std::ptr::null;
 use sql::DbType;
 
@@ -51,7 +53,7 @@ pub struct Cursor<'a: 'b, 'b> {
 	p_stmt : &'b Statement<'a>,
 	error : bool
 }
-
+/*
 impl<'a> Statement<'a> {
 	///Execute the SQL query and returns the result in an iterable Cursor.
 	pub fn execute_query<'b>(&'b mut self) -> Cursor<'a, 'b> {
@@ -179,6 +181,8 @@ impl<'a> Statement<'a> {
 	}
 }
 
+*/
+/*
 impl<'a, 'b> Cursor<'a, 'b> {
 	///Retrieve the column value as int with index <i>column_index</i>from the current row, the first column is 0.
 	pub fn get_int(&self, column_index : int) -> int {
@@ -213,23 +217,25 @@ impl<'a, 'b> Cursor<'a, 'b> {
 		}
 	}
 	///Retrieve the column value as String with index <i>column_index</i>from the current row, the first column is 0.
-	pub fn get_string(&self, column_index : int) -> String {
+	pub fn get_string(&self, column_index : i32) -> String {
 		match self.p_stmt.p_con.db_type {
 		DbType::SQLite3 => {
-			match unsafe{CString::new(sqlite3_column_text(self.p_stmt.p_stmt, column_index as c_int) as *const i8, false)}.as_str()
+			//match unsafe{CString::new(sqlite3_column_text(self.p_stmt.p_stmt, column_index as c_int) as *const i8, false)}.as_str()
+			match str::from_utf8(unsafe{ffi::c_str_to_bytes(&sqlite3_column_text(self.p_stmt.p_stmt, column_index))}).unwrap()
 			{ None => String::new(), Some(s) => String::from_str(s) }
 		}
 		}
 	}
 
 	///Retrieve the column value as an array of bytes <i>column_index</i>from the current row, the first column is 0.
-	pub fn get_blob(&self, column_index : int) -> Vec<u8> {
+	pub fn get_blob(&self, column_index : i32) -> Vec<u8> {
 		match self.p_stmt.p_con.db_type {
 		DbType::SQLite3 => {
 		let p = unsafe { sqlite3_column_blob(self.p_stmt.p_stmt, column_index as c_int) };
 		let n = unsafe { sqlite3_column_bytes(self.p_stmt.p_stmt, column_index as c_int) };
-		let mut v = Vec::new(); v.push_all(unsafe { CVec::new(p, n as uint) }.as_slice());
-		v
+		//let mut v = Vec::new(); v.push_all(unsafe { CVec::new(p, n as uint) }.as_slice());
+		//v
+		Vec::from_raw_buf(p, n)
 		}
 		}
 	}
@@ -247,6 +253,7 @@ impl<'a, 'b> Iterator<IoResult<Cursor<'a, 'b>>> for Cursor<'a, 'b> {
 		if self.error { return None; }
 		match unsafe { sqlite3_step(self.p_stmt.p_stmt) } {
 			100 => Some(Ok(*self)),
+			//100 => None,
 			101 => None,
 			err => {	self.error = true;
 					Some (Err(IoError {	kind : OtherIoError, desc : "Row Fetch Failed",
@@ -255,7 +262,7 @@ impl<'a, 'b> Iterator<IoResult<Cursor<'a, 'b>>> for Cursor<'a, 'b> {
 		}
 	}
 }
-
+*/
 impl Connection {
 	///Open a new connection to the a database.
 	///
@@ -265,7 +272,7 @@ impl Connection {
 		match db_type {
 			DbType::SQLite3 => {
 				let p_db : *const c_void = null();
-				match filename.with_c_str(|c_str| unsafe { sqlite3_open(c_str, &p_db) }) {
+				match CString::from_slice(filename.as_bytes()) (|c_str| unsafe { sqlite3_open(c_str, &p_db) }) {
 					0 => Ok( Connection { 	db_type : DbType::SQLite3, p_db : p_db } ),
 					e => Err(IoError	{ 	kind : 	ConnectionFailed, desc : "Database Connection Failed",
 											detail : Some(get_error(p_db, e))}) }
@@ -294,7 +301,7 @@ impl Drop for Connection {
 	///The drop method is called when Connection goes out of scope, and therefore close properly the connection.
 	fn drop(&mut self) {
 		match self.db_type {
-			DbType::SQLite3 => { if self.p_db.is_not_null() { unsafe { sqlite3_close_v2(self.p_db); } } }
+			DbType::SQLite3 => { if !self.p_db.is_null() { unsafe { sqlite3_close_v2(self.p_db); } } }
 		}
 	}
 }
@@ -307,10 +314,10 @@ impl<'a> Drop for Statement<'a> {
 */
 
 fn get_error(p_db : *const c_void, errno : c_int) -> String {
-	let mut buf = String::new();
-	match unsafe{CString::new(sqlite3_errmsg(p_db), false)}.as_str() { None => (), Some(s) => { buf.push_str(s); buf.push(' '); } }
+	let mut buf = String::from_str(unsafe { str::from_c_str(sqlite3_errmsg(p_db)) });
 	buf.push('('); buf.push_str(errno.to_string().as_slice());
-	match unsafe{CString::new(sqlite3_errstr(errno), false)}.as_str() { None => (), Some(s) => { buf.push(':'); buf.push_str(s); } }
+	//match unsafe{CString::new(sqlite3_errstr(errno), false)}.as_str() { None => (), Some(s) => { buf.push(':'); buf.push_str(s); } }
+	//match str::from_utf8(unsafe{ffi::c_str_to_bytes(&sqlite3_errstr(errno))}).unwrap() { None => (), Some(s) => { buf.push(':'); buf.push_str(s); } }
 	buf.push(')');
 	buf
 }

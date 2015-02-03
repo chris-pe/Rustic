@@ -1,5 +1,5 @@
-﻿use std::collections::hash_map::{HashMap, Keys, Entries, Values, MutEntries};
-use std::io::{BufferedReader, BufferedWriter, IoError};
+﻿use std::collections::hash_map::{HashMap, Keys, Values, Iter, IterMut};
+use std::old_io::{BufferedReader, BufferedWriter, IoError};
 
 ///Contains a list of properties. A property is a key-value pair.
 pub struct Properties {
@@ -13,7 +13,7 @@ impl Properties {
 	}
 	
 	///Return the number of properties.
-	pub fn len(&self) -> uint {
+	pub fn len(&self) -> u32 {
 		self.props.len()
 	}	
 	///Return true if the properties list is empty
@@ -105,7 +105,7 @@ impl Properties {
 
 					// determination of the key
 					esc=false;
-					let mut idx = 0u;							
+					let mut idx = 0u32;							
 					for c in l_str.chars() {
 						if c=='\\' { esc=true; idx+=1; continue; }
 						if !esc && (c.is_whitespace() || c=='=' || c==':') { break; } 
@@ -156,13 +156,13 @@ impl Properties {
 	}
 
 	///An iterator visiting all properties key-value pairs in arbitrary order. Iterator element type is (&'a String, &'a String).
-	pub fn iter<'a>(&'a self) -> Entries<'a, String, String> {
+	pub fn iter<'a>(&'a self) -> Iter<'a, String, String> {
 		self.props.iter()
 	}
 	
 	///An iterator visiting all properties key-value pairs in arbitrary order, with mutable references to the values.
 	///Iterator element type is (&'a String, &'a mut String).
-	pub fn iter_mut<'a>(&'a mut self) -> MutEntries<'a, String, String> {
+	pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, String, String> {
 		self.props.iter_mut()
 	}
 }
@@ -170,7 +170,7 @@ impl Properties {
 fn decode_chars(s : &str) -> String {
 	let mut buf = String::from_str(s);
 	let mut esc=false;
-	let mut idx = 0u;
+	let mut idx = 0u32;
 	for mut c in s.chars() {
 		if esc {
 			match c {
@@ -191,7 +191,7 @@ fn decode_chars(s : &str) -> String {
 fn encode_chars<'a>(s : &str, is_key : bool) -> String {
 	let mut buf = String::from_str(s);
 	let mut esc=true;
-	let mut idx = 0u;
+	let mut idx = 0u32;
 	for c in s.chars() {
 		if c.is_whitespace() 	{
 			if esc 	{ 	match c {
