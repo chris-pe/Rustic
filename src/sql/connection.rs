@@ -247,7 +247,8 @@ impl<'a, 'b> Cursor<'a, 'b> {
 }
 
 /// Allow to iterate Cursor.
-impl<'a, 'b> Iterator<IoResult<Cursor<'a, 'b>>> for Cursor<'a, 'b> {
+impl<'a, 'b> Iterator for Cursor<'a, 'b> {
+	type Item = IoResult<Cursor<'a, 'b>>;
 	/// Returns the next row of the Cursor.
 	///
 	///Returns a Cursor if ok, or a <i>OtherIoError</i> IoError with (if available from the underlying database)
