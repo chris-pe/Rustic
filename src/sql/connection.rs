@@ -53,8 +53,9 @@ pub struct Cursor<'a: 'b, 'b> {
 	p_stmt : &'b Statement<'a>,
 	error : bool
 }
-/*
+
 impl<'a> Statement<'a> {
+
 	///Execute the SQL query and returns the result in an iterable Cursor.
 	pub fn execute_query<'b>(&'b mut self) -> Cursor<'a, 'b> {
 		match self.p_con.db_type {
@@ -64,6 +65,7 @@ impl<'a> Statement<'a> {
 		}
 		}
 	}
+
 	///Execute the SQL statement and returns None if succeeds or an IoError.
 	pub fn execute(&mut self) -> Option<IoError> {
 		match self.p_con.db_type {
@@ -76,6 +78,7 @@ impl<'a> Statement<'a> {
 		}
 		}
 	}
+
 	///Execute the SQL INSERT, UPDATE or DELETE statement and returns the number of affected rows.
 	///Returns 0 for SQL statement that returns nothing. Returns an IoError if fails.
 	pub fn execute_update(&mut self) -> IoResult<int> {
@@ -139,7 +142,7 @@ impl<'a> Statement<'a> {
 		}
 		}
 	}
-
+/*
 	///Replace in the SQL Statement the '?' parameter by an &str. The leftmost parameter has an index of 1.
 	pub fn set_string(&mut self, param_index : int, value : &str) -> Option<IoError> {
 		match self.p_con.db_type {
@@ -154,6 +157,8 @@ impl<'a> Statement<'a> {
 		}
 		}
 	}
+	*/
+	
 	///Replace in the SQL Statement the '?' parameter by an &[u8]. The leftmost parameter has an index of 1.
 	pub fn set_blob(&mut self, param_index : int, value : &[u8]) -> Option<IoError> {
 		match self.p_con.db_type {
@@ -181,8 +186,7 @@ impl<'a> Statement<'a> {
 	}
 }
 
-*/
-/*
+
 impl<'a, 'b> Cursor<'a, 'b> {
 	///Retrieve the column value as int with index <i>column_index</i>from the current row, the first column is 0.
 	pub fn get_int(&self, column_index : int) -> int {
@@ -216,6 +220,7 @@ impl<'a, 'b> Cursor<'a, 'b> {
 		}
 		}
 	}
+/*
 	///Retrieve the column value as String with index <i>column_index</i>from the current row, the first column is 0.
 	pub fn get_string(&self, column_index : i32) -> String {
 		match self.p_stmt.p_con.db_type {
@@ -226,7 +231,7 @@ impl<'a, 'b> Cursor<'a, 'b> {
 		}
 		}
 	}
-
+*/
 	///Retrieve the column value as an array of bytes <i>column_index</i>from the current row, the first column is 0.
 	pub fn get_blob(&self, column_index : i32) -> Vec<u8> {
 		match self.p_stmt.p_con.db_type {
@@ -235,7 +240,7 @@ impl<'a, 'b> Cursor<'a, 'b> {
 		let n = unsafe { sqlite3_column_bytes(self.p_stmt.p_stmt, column_index as c_int) };
 		//let mut v = Vec::new(); v.push_all(unsafe { CVec::new(p, n as uint) }.as_slice());
 		//v
-		Vec::from_raw_buf(p, n)
+		unsafe {Vec::from_raw_buf(p, n as usize)}
 		}
 		}
 	}
@@ -262,7 +267,7 @@ impl<'a, 'b> Iterator<IoResult<Cursor<'a, 'b>>> for Cursor<'a, 'b> {
 		}
 	}
 }
-*/
+
 impl Connection {
 	///Open a new connection to the a database.
 	///
@@ -272,29 +277,34 @@ impl Connection {
 		match db_type {
 			DbType::SQLite3 => {
 				let p_db : *const c_void = null();
-				match CString::from_slice(filename.as_bytes()) (|c_str| unsafe { sqlite3_open(c_str, &p_db) }) {
+				match unsafe{sqlite3_open(CString::from_slice(filename.as_bytes()).as_ptr(), &p_db)} {
 					0 => Ok( Connection { 	db_type : DbType::SQLite3, p_db : p_db } ),
-					e => Err(IoError	{ 	kind : 	ConnectionFailed, desc : "Database Connection Failed",
-											detail : Some(get_error(p_db, e))}) }
+					i => Err(IoError	{ 	kind : 	ConnectionFailed, desc : "Database Connection Failed",
+											detail : Some(get_error(p_db, i))}) 
+				}							
 			}
 		}
+
 	}
+
 	///Prepare a statement for executing SQL instructions.
 	///
 	///Returns a Statement if ok, or an <i>InvalidInput</i> IoError with (if available from the underlying database)
-	///in the <i>detail</i> field text that describes the error, result code, and text that describes the result code.
+	///in the <i>detail</i> field text that describes the error, result code, and text that describes the result code.	
 	pub fn prepare_statement<'a>(&'a self, sql :&str) -> IoResult<Statement<'a>> {
 		match self.db_type {
 		DbType::SQLite3 => {
 		let p_stmt  : *const c_void = null();
 		let pz_tail : *const c_void = null();
-		match sql.with_c_str(|c_str| unsafe { sqlite3_prepare_v2(self.p_db, c_str, -1, &p_stmt, &pz_tail) }) {
+		
+		match unsafe { sqlite3_prepare_v2(self.p_db, CString::from_slice(sql.as_bytes()).as_ptr(), -1, &p_stmt, &pz_tail) } {
 			0 => Ok(Statement { p_con : self, p_stmt : p_stmt, exec : false }),
 			e => Err(IoError{	kind : InvalidInput, desc : "Statement Creation Failed",
 								detail : Some(get_error(self.p_db, e))}) }
 		}
 		}
 	}
+
 }
 
 impl Drop for Connection {
@@ -315,9 +325,10 @@ impl<'a> Drop for Statement<'a> {
 
 fn get_error(p_db : *const c_void, errno : c_int) -> String {
 	let mut buf = String::from_str(unsafe { str::from_c_str(sqlite3_errmsg(p_db)) });
+	if !buf.is_empty() { buf.push(' '); }
 	buf.push('('); buf.push_str(errno.to_string().as_slice());
-	//match unsafe{CString::new(sqlite3_errstr(errno), false)}.as_str() { None => (), Some(s) => { buf.push(':'); buf.push_str(s); } }
-	//match str::from_utf8(unsafe{ffi::c_str_to_bytes(&sqlite3_errstr(errno))}).unwrap() { None => (), Some(s) => { buf.push(':'); buf.push_str(s); } }
+	let mut errstr = unsafe {str::from_c_str(sqlite3_errstr(errno))};
+	if !errstr.is_empty() { buf.push(':');  buf.push_str(errstr); }
 	buf.push(')');
 	buf
 }

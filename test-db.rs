@@ -1,13 +1,12 @@
 extern crate rustic;
 
-use rustic::sql::{Connection,SQLite3};
-//use std::io::{IoResult};
+use rustic::sql::Connection;
+use rustic::sql::DbType::SQLite3;
 
 fn main() {
 	match Connection::new(SQLite3, "test-db.db") {
 		Ok(db) => {
 					match db.prepare_statement("CREATE TABLE t(i INTEGER PRIMARY KEY, f REAL, t TEXT, b BLOB);") {
-					//match db.prepare_statement("CREATE TABLE t(i INTEGER PRIMARY KEY, f REAL, t TEXT);") {
 						Ok(mut st) => {
 							match st.execute() {
 									None    => (),
