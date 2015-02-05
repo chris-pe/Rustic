@@ -36,6 +36,25 @@ fn main() {
 							Some(s) => println!("{}", s)
 						}
 						}
+						
+						match db.prepare_statement("SELECT i,f FROM t;") {
+						Ok(mut st) => {
+							let mut curs = st.execute_query();
+							for i in curs {
+								match i {
+									Ok(s)  => println!("{}:{}",	curs.get_long(0), curs.get_double(1)),
+									Err(e) => match e.detail {
+										Some(s) => println!("{}", s),
+										None => ()
+									}
+								}
+							}
+						}
+						Err(e) => match e.detail {
+							None => (),
+							Some(s) => println!("{}", s)
+						}
+						}
 					}
 		Err(e) => match e.detail {
 						None => (),

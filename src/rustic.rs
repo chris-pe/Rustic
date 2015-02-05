@@ -2,10 +2,8 @@
 //!
 //!This project is at an early development stage, please do not use elements tagged as <i>WIP</i>. 
 #![crate_type = "lib"]
-
-#![desc = "Rustic"]
-#![license = "GPLv2"]
-#![comment = "Miscellaneous utility classes for the Rust programming language."]
+#![crate_name = "rustic"]
+ #![feature(std_misc,collections,core,io, libc)]
 
 extern crate collections;
 extern crate libc;
@@ -26,4 +24,5 @@ pub mod sql {
 	pub enum DbType {
 		SQLite3
 	}
+	impl Copy for DbType {}
 }
