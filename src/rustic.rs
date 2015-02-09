@@ -3,7 +3,7 @@
 //!This project is at an early development stage, please do not use elements tagged as <i>WIP</i>. 
 #![crate_type = "lib"]
 #![crate_name = "rustic"]
- #![feature(std_misc,collections,core,io, libc)]
+#![feature(std_misc,collections,core,io,libc)]
 
 extern crate collections;
 extern crate libc;
