@@ -1,3 +1,5 @@
+#![feature(core)]
+
 extern crate rustic;
 
 use rustic::sql::Connection;
@@ -59,7 +61,7 @@ fn main() {
 							st.set_string(1, "%o%");
 							for i in st.execute_query() {
 								match i {
-									Ok(s)  => println!("{}:{}:{}:{}",	s.get_long(0), s.get_double(1),
+									Ok(s)  => println!("{}:{}:{}:{:?}",	s.get_long(0), s.get_double(1),
 																		s.get_string(2), s.get_blob(3) ),
 									Err(e) => match e.detail {
 										Some(s) => println!("{}", s),
@@ -71,7 +73,7 @@ fn main() {
 							println!("----------------------------------------------------");
 							for i in st.execute_query() {
 								match i {
-									Ok(s)  => println!("{}:{}:{}:{}", 	s.get_long(0), s.get_double(1),
+									Ok(s)  => println!("{}:{}:{}:{:?}", 	s.get_long(0), s.get_double(1),
 																		s.get_string(2), s.get_blob(3) ),
 									Err(e) => match e.detail {
 										Some(s) => println!("{}", s),

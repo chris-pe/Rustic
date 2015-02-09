@@ -256,8 +256,7 @@ impl<'a, 'b> Iterator for Cursor<'a, 'b> {
 		DbType::SQLite3 => {
 		if self.error { return None; }
 		match unsafe { sqlite3_step(self.p_stmt.p_stmt) } {
-			//100 => Some(Ok(self)),
-			100 => None,
+			100 => Some(Ok(Cursor { p_stmt : self.p_stmt, error : false })),
 			101 => None,
 			err => {	self.error = true;
 					Some (Err(IoError {	kind : OtherIoError, desc : "Row Fetch Failed",
