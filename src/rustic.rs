@@ -9,11 +9,11 @@ extern crate collections;
 extern crate libc;
 
 ///Miscellaneous utility classes.
-/*pub mod util {
+pub mod util {
 	pub use self::properties::Properties;
 	mod properties;
 }
-*/
+
 ///Provides the API for accessing and processing data stored in a relational database.
 pub mod sql {
 	pub use self::connection::Connection;

@@ -1,7 +1,6 @@
 ﻿use libc::{c_int, c_char, c_uchar, c_double,c_void};
 use std::str::from_utf8;
 use std::ffi::{CString,c_str_to_bytes};
-//use std::c_vec::CVec;
 use std::vec::Vec;
 use std::old_io::{IoResult, IoError, ConnectionFailed, InvalidInput, OtherIoError};
 use std::ptr::null;
@@ -19,13 +18,13 @@ extern {
 	fn sqlite3_column_int(pStmt : *const c_void, iCol : c_int) -> c_int;
 	fn sqlite3_column_int64(pStmt : *const c_void, iCol : c_int) -> i64;
 	fn sqlite3_column_double(pStmt : *const c_void, iCol : c_int) -> c_double;
-	//fn sqlite3_column_text(pStmt : *const c_void, iCol : c_int) -> *const c_uchar;
+	fn sqlite3_column_text(pStmt : *const c_void, iCol : c_int) -> *const c_uchar;
 	fn sqlite3_column_blob(pStmt : *const c_void, iCol : c_int) ->  *mut u8;
 	fn sqlite3_column_bytes(pStmt : *const c_void, iCol : c_int) -> c_int;
 	fn sqlite3_bind_int(pStmt : *const c_void, iCol : c_int, value : c_int) -> c_int;
 	fn sqlite3_bind_int64(pStmt : *const c_void, iCol : c_int, value : i64) -> c_int;
 	fn sqlite3_bind_double(pStmt : *const c_void, iCol : c_int, value : f64) -> c_int;
-	//fn sqlite3_bind_text(pStmt : *const c_void, iCol : c_int, value : *const c_char, n : c_int, f: *const extern fn(*const c_void)) -> c_int;
+	fn sqlite3_bind_text(pStmt : *const c_void, iCol : c_int, value : *const c_char, n : c_int, f: *const extern fn(*const c_void)) -> c_int;
 	fn sqlite3_bind_null(pStmt : *const c_void, iCol : c_int) -> c_int;
 	fn sqlite3_bind_blob(pStmt : *const c_void, iCol : c_int, value : *const c_char, n : c_int, f: *const extern fn(*const c_void)) -> c_int;
 	fn sqlite3_reset(pStmt : *const c_void) -> c_int;
@@ -141,22 +140,22 @@ impl<'a> Statement<'a> {
 		}
 		}
 	}
-/*
+
 	///Replace in the SQL Statement the '?' parameter by an &str. The leftmost parameter has an index of 1.
-	pub fn set_string(&mut self, param_index : int, value : &str) -> Option<IoError> {
+	pub fn set_string(&mut self, param_index : i32, value : &str) -> Option<IoError> {
 		match self.p_con.db_type {
 		DbType::SQLite3 => {
 			if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; self.exec=false; }
-			match value.with_c_str(|c_str| unsafe { sqlite3_bind_text(self.p_stmt, param_index as c_int,
-													c_str, -1, -1 as *const extern fn(*const c_void)) }) {
+			match unsafe { sqlite3_bind_text(self.p_stmt, param_index as c_int,
+					CString::from_slice(value.as_bytes()).as_ptr(), -1, -1 as *const extern fn(*const c_void))} {
 				0 => None,
 				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
 										detail : Some(get_error(self.p_con.p_db, n as c_int))}) 
 			}
 		}
-		}
 	}
-	*/
+	}
+	
 	
 	///Replace in the SQL Statement the '?' parameter by an &[u8]. The leftmost parameter has an index of 1.
 	pub fn set_blob(&mut self, param_index : i32, value : &[u8]) -> Option<IoError> {
@@ -219,18 +218,18 @@ impl<'a, 'b> Cursor<'a, 'b> {
 		}
 		}
 	}
-/*
+
 	///Retrieve the column value as String with index <i>column_index</i>from the current row, the first column is 0.
 	pub fn get_string(&self, column_index : i32) -> String {
 		match self.p_stmt.p_con.db_type {
 		DbType::SQLite3 => {
 			//match unsafe{CString::new(sqlite3_column_text(self.p_stmt.p_stmt, column_index as c_int) as *const i8, false)}.as_str()
-			match str::from_utf8(unsafe{ffi::c_str_to_bytes(&sqlite3_column_text(self.p_stmt.p_stmt, column_index))}).unwrap()
-			{ None => String::new(), Some(s) => String::from_str(s) }
+			match from_utf8(unsafe{c_str_to_bytes(&(sqlite3_column_text(self.p_stmt.p_stmt, column_index) as *const c_char))})
+			{ Err(_) => String::new(), Ok(s) => String::from_str(s) }
 		}
 		}
 	}
-*/
+
 	///Retrieve the column value as an array of bytes <i>column_index</i>from the current row, the first column is 0.
 	pub fn get_blob(&self, column_index : i32) -> Vec<u8> {
 		match self.p_stmt.p_con.db_type {
@@ -242,23 +241,23 @@ impl<'a, 'b> Cursor<'a, 'b> {
 		unsafe {Vec::from_raw_buf(p, n as usize)}
 		}
 		}
-	}
+	}	
 }
 
 /// Allow to iterate Cursor.
 impl<'a, 'b> Iterator for Cursor<'a, 'b> {
-	type Item = IoResult<&Cursor<'a, 'b>>;
+	type Item = IoResult<Cursor<'a, 'b>>;
 	/// Returns the next row of the Cursor.
 	///
 	///Returns a Cursor if ok, or a <i>OtherIoError</i> IoError with (if available from the underlying database)
 	///in the <i>detail</i> field text that describes the error, result code, and text that describes the result code.
-	fn next(&mut self) -> Option<IoResult<&Cursor<'a, 'b>>> {
+	fn next(&mut self) -> Option<IoResult<Cursor<'a, 'b>>> {
 		match self.p_stmt.p_con.db_type {
 		DbType::SQLite3 => {
 		if self.error { return None; }
 		match unsafe { sqlite3_step(self.p_stmt.p_stmt) } {
-			100 => Some(Ok(self)),
-			//100 => None,
+			//100 => Some(Ok(self)),
+			100 => None,
 			101 => None,
 			err => {	self.error = true;
 					Some (Err(IoError {	kind : OtherIoError, desc : "Row Fetch Failed",

@@ -13,7 +13,7 @@ impl Properties {
 	}
 	
 	///Return the number of properties.
-	pub fn len(&self) -> u32 {
+	pub fn len(&self) -> usize {
 		self.props.len()
 	}	
 	///Return true if the properties list is empty
@@ -90,8 +90,8 @@ impl Properties {
 					if l_str.starts_with("#") || l_str.starts_with("!") { continue; } // Comment line
 
 					if l_str.ends_with("\n") {
-						if l_str.ends_with("\r\n") { l_str=l_str.slice_to(l_str.len()-2); } // Line ends with '\r\n'
-							else { l_str=l_str.slice_to(l_str.len()-1); } // Line ends with '\n'
+						if l_str.ends_with("\r\n") { l_str=&l_str[..l_str.len()-2]; } // Line ends with '\r\n'
+							else { l_str=&l_str[..l_str.len()-1]; } // Line ends with '\n'
 					}
 					if l_str.len()==0 { continue; } //Empty line
 
@@ -100,21 +100,21 @@ impl Properties {
 					for c in l_str.chars().rev() {
 						if c=='\\' { esc=!esc; } else { break; }
 					}
-					if esc { multi.push_str(l_str.slice_to(l_str.len()-1)); continue; }
+					if esc { multi.push_str(&l_str[..l_str.len()-1]); continue; }
 					if !multi.is_empty() { multi.push_str(l_str); l_str=multi.as_slice(); }
 
 					// determination of the key
 					esc=false;
-					let mut idx = 0u32;							
+					let mut idx = 0;							
 					for c in l_str.chars() {
 						if c=='\\' { esc=true; idx+=1; continue; }
 						if !esc && (c.is_whitespace() || c=='=' || c==':') { break; } 
-						esc=false; idx+=c.len_utf8_bytes();
+						esc=false; idx+=c.len_utf8();
 					}
-					let key = l_str.slice_to(idx).into_string();
+					let key = String::from_str(&l_str[..idx]);
 					
-					l_str = l_str.slice_from(idx); l_str = l_str.trim_left();
-					if l_str.starts_with("=") || l_str.starts_with(":") { 	l_str = l_str.slice_from(1);
+					l_str = &l_str[idx..]; l_str = l_str.trim_left();
+					if l_str.starts_with("=") || l_str.starts_with(":") { 	l_str = &l_str[1..];
 																			l_str = l_str.trim_left(); }					
 					self.props.insert(decode_chars(key.as_slice()), decode_chars(l_str));
 				}
@@ -170,7 +170,7 @@ impl Properties {
 fn decode_chars(s : &str) -> String {
 	let mut buf = String::from_str(s);
 	let mut esc=false;
-	let mut idx = 0u32;
+	let mut idx = 0;
 	for mut c in s.chars() {
 		if esc {
 			match c {
@@ -183,7 +183,7 @@ fn decode_chars(s : &str) -> String {
 			}
 		}
 		if c=='\\' { esc=true; continue; }
-		idx+=c.len_utf8_bytes();
+		idx+=c.len_utf8();
 	}
 	buf
 }
@@ -191,7 +191,7 @@ fn decode_chars(s : &str) -> String {
 fn encode_chars<'a>(s : &str, is_key : bool) -> String {
 	let mut buf = String::from_str(s);
 	let mut esc=true;
-	let mut idx = 0u32;
+	let mut idx = 0;
 	for c in s.chars() {
 		if c.is_whitespace() 	{
 			if esc 	{ 	match c {
@@ -212,7 +212,7 @@ fn encode_chars<'a>(s : &str, is_key : bool) -> String {
 					if !is_key { esc=false; }
 					else if c=='=' || c==':' { buf.insert(idx, '\\'); idx+=1; }
 				}
-		idx+=c.len_utf8_bytes();
+		idx+=c.len_utf8();
 	}
 	if is_key && (s.starts_with("#") || s.starts_with("!")) {
 		buf.insert(0, '\\');
