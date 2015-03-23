@@ -1,8 +1,8 @@
 ﻿use libc::{c_int, c_char, c_uchar, c_double,c_void};
 use std::str::from_utf8;
-use std::ffi::{CString,c_str_to_bytes};
+use std::ffi::{CString,CStr};
 use std::vec::Vec;
-use std::old_io::{IoResult, IoError, ConnectionFailed, InvalidInput, OtherIoError};
+use std::io::{Error, ErrorKind, Result};
 use std::ptr::null;
 use sql::DbType;
 
@@ -64,121 +64,120 @@ impl<'a> Statement<'a> {
 		}
 	}
 
-	///Execute the SQL statement and returns None if succeeds or an IoError.
-	pub fn execute(&mut self) -> Option<IoError> {
+	///Execute the SQL statement and returns None if succeeds or an Io Error.
+	pub fn execute(&mut self) -> Option<Error> {
 		match self.p_con.db_type {
 		DbType::SQLite3 => {
 		if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; } else { self.exec=true; }
 		match unsafe { sqlite3_step(self.p_stmt) } {
 			100 | 101 => None,
-			err => Some (IoError {	kind : OtherIoError, desc : "Statement Execution Failed",
-								detail : Some(get_error(self.p_con.p_db, err))}) }
+			err => Some (Error::new(ErrorKind::Other, "Statement Execution Failed",
+									Some(get_error(self.p_con.p_db, err)))) }
 		}
 		}
 	}
 
 	///Execute the SQL INSERT, UPDATE or DELETE statement and returns the number of affected rows.
-	///Returns 0 for SQL statement that returns nothing. Returns an IoError if fails.
-	pub fn execute_update(&mut self) -> IoResult<i32> {
+	///Returns 0 for SQL statement that returns nothing. Returns an Io Error if fails.
+	pub fn execute_update(&mut self) -> Result<i32> {
 		match self.p_con.db_type {
 		DbType::SQLite3 => { 
 		if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; } else { self.exec=true; }
 		match unsafe { sqlite3_step(self.p_stmt) } {
 			100 | 101 => Ok(unsafe { sqlite3_changes(self.p_stmt) }),
-			err => Err(IoError {	kind : OtherIoError, desc : "Statement Execution Failed",
-								detail : Some(get_error(self.p_con.p_db, err)) }) }
+			err => Err(Error::new(ErrorKind::Other, "Statement Execution Failed",
+									Some(get_error(self.p_con.p_db, err)))) }
 		}
 		}
 	}
 	///Replace in the SQL Statement the '?' parameter by an int. The leftmost parameter has an index of 1.
-	pub fn set_int(&mut self, param_index : i32, value : i32) -> Option<IoError> {
+	pub fn set_int(&mut self, param_index : i32, value : i32) -> Option<Error> {
 		match self.p_con.db_type {
 		DbType::SQLite3 => {
 			if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; self.exec=false; }
 			match unsafe { sqlite3_bind_int(self.p_stmt, param_index, value) } {
 				0 => None,
-				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
-										detail : Some(get_error(self.p_con.p_db, n))}) }
+				n => Some(Error::new(ErrorKind::Other, "Statement Set Parameter Failed",
+										Some(get_error(self.p_con.p_db, n)))) }
 			}
 		}
 	}
 	///Replace in the SQL Statement the '?' parameter by an i64. The leftmost parameter has an index of 1.
-	pub fn set_long(&mut self, param_index : i32, value : i64) -> Option<IoError> {
+	pub fn set_long(&mut self, param_index : i32, value : i64) -> Option<Error> {
 		match self.p_con.db_type {
 		DbType::SQLite3 => {
 			if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; self.exec=false; }
 			match unsafe { sqlite3_bind_int64(self.p_stmt, param_index as c_int, value) } {
 				0 => None,
-				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
-										detail : Some(get_error(self.p_con.p_db, n))}) }
+				n => Some(Error::new(ErrorKind::Other, "Statement Set Parameter Failed",
+										Some(get_error(self.p_con.p_db, n)))) }
 		}
 		}
 	}
 
 	///Replace in the SQL Statement the '?' parameter by an f32. The leftmost parameter has an index of 1.
-	pub fn set_float(&mut self, param_index : i32, value : f32) -> Option<IoError> {
+	pub fn set_float(&mut self, param_index : i32, value : f32) -> Option<Error> {
 		match self.p_con.db_type {
 		DbType::SQLite3 => {
 			if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; self.exec=false; }
 			match unsafe { sqlite3_bind_double(self.p_stmt, param_index as c_int, value as f64) } {
 				0 => None,
-				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
-										detail : Some(get_error(self.p_con.p_db, n))}) }
+				n => Some(Error::new(ErrorKind::Other, "Statement Set Parameter Failed",
+										Some(get_error(self.p_con.p_db, n)))) }
 		}
 		}
 	}
 
 	///Replace in the SQL Statement the '?' parameter by a double. The leftmost parameter has an index of 1.
-	pub fn set_double(&mut self, param_index : i32, value : f64) -> Option<IoError> {
+	pub fn set_double(&mut self, param_index : i32, value : f64) -> Option<Error> {
 		match self.p_con.db_type {
 		DbType::SQLite3 => {
 			if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; self.exec=false; }
 			match unsafe { sqlite3_bind_double(self.p_stmt, param_index as c_int, value) } {
 				0 => None,
-				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
-										detail : Some(get_error(self.p_con.p_db, n))}) }
+				n => Some(Error::new(ErrorKind::Other, "Statement Set Parameter Failed",
+										Some(get_error(self.p_con.p_db, n)))) }
 		}
 		}
 	}
 
 	///Replace in the SQL Statement the '?' parameter by an &str. The leftmost parameter has an index of 1.
-	pub fn set_string(&mut self, param_index : i32, value : &str) -> Option<IoError> {
+	pub fn set_string(&mut self, param_index : i32, value : &str) -> Option<Error> {
 		match self.p_con.db_type {
 		DbType::SQLite3 => {
 			if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; self.exec=false; }
-			match unsafe { sqlite3_bind_text(self.p_stmt, param_index as c_int,
-					CString::from_slice(value.as_bytes()).as_ptr(), -1, -1 as *const extern fn(*const c_void))} {
-				0 => None,
-				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
-										detail : Some(get_error(self.p_con.p_db, n as c_int))}) 
+			match CString::new(value) {
+				Ok(s)	=> match unsafe { sqlite3_bind_text(self.p_stmt, param_index as c_int, s.as_ptr(), -1, -1 as *const extern fn(*const c_void)) } {
+								0 => None,
+								n => Some(Error::new(ErrorKind::Other, "Statement Set Parameter Failed", Some(get_error(self.p_con.p_db, n as c_int)))) },
+				Err(e)	=> Some(Error::new(ErrorKind::Other, "Null Error", Some(e.nul_position().to_string())))
 			}
 		}
+		}
 	}
-	}
-	
 	
 	///Replace in the SQL Statement the '?' parameter by an &[u8]. The leftmost parameter has an index of 1.
-	pub fn set_blob(&mut self, param_index : i32, value : &[u8]) -> Option<IoError> {
+	pub fn set_blob(&mut self, param_index : i32, value : &[u8]) -> Option<Error> {
 		match self.p_con.db_type {
 		DbType::SQLite3 => {
 			if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; self.exec=false; }
 			match unsafe { sqlite3_bind_blob(self.p_stmt, param_index as c_int, value.as_ptr() as *const i8,
 												value.len() as i32, -1 as *const extern fn(*const c_void)) } {
 				0 => None,
-				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
-										detail : Some(get_error(self.p_con.p_db, n))}) }
+				n => Some(Error::new(ErrorKind::Other, "Statement Set Parameter Failed",
+										Some(get_error(self.p_con.p_db, n)))) }
 		}
 		}
 	}
 	///Replace in the SQL Statement the '?' parameter by an SQL NULL. The leftmost parameter has an index of 1.
-	pub fn set_null(&mut self, param_index : i32) -> Option<IoError> {
+	pub fn set_null(&mut self, param_index : i32) -> Option<Error> {
 		match self.p_con.db_type {
 		DbType::SQLite3 => {
 			if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; self.exec=false; }
 			match unsafe { sqlite3_bind_null(self.p_stmt, param_index as c_int) } {
 				0 => None,
-				n => Some (	IoError {	kind : OtherIoError, desc : "Statement Set Parameter Failed",
-										detail : Some(get_error(self.p_con.p_db, n))}) }
+				n => Some(Error::new(ErrorKind::Other, "Statement Set Parameter Failed",
+										Some(get_error(self.p_con.p_db, n)))) }
 		}
 		}
 	}
@@ -224,7 +223,7 @@ impl<'a, 'b> Cursor<'a, 'b> {
 		match self.p_stmt.p_con.db_type {
 		DbType::SQLite3 => {
 			//match unsafe{CString::new(sqlite3_column_text(self.p_stmt.p_stmt, column_index as c_int) as *const i8, false)}.as_str()
-			match from_utf8(unsafe{c_str_to_bytes(&(sqlite3_column_text(self.p_stmt.p_stmt, column_index) as *const c_char))})
+			match from_utf8(unsafe{CStr::from_ptr(sqlite3_column_text(self.p_stmt.p_stmt, column_index) as *const c_char)}.to_bytes())
 			{ Err(_) => String::new(), Ok(s) => String::from_str(s) }
 		}
 		}
@@ -246,12 +245,12 @@ impl<'a, 'b> Cursor<'a, 'b> {
 
 /// Allow to iterate Cursor.
 impl<'a, 'b> Iterator for Cursor<'a, 'b> {
-	type Item = IoResult<Cursor<'a, 'b>>;
+	type Item = Result<Cursor<'a, 'b>>;
 	/// Returns the next row of the Cursor.
 	///
 	///Returns a Cursor if ok, or a <i>OtherIoError</i> IoError with (if available from the underlying database)
 	///in the <i>detail</i> field text that describes the error, result code, and text that describes the result code.
-	fn next(&mut self) -> Option<IoResult<Cursor<'a, 'b>>> {
+	fn next(&mut self) -> Option<Result<Cursor<'a, 'b>>> {
 		match self.p_stmt.p_con.db_type {
 		DbType::SQLite3 => {
 		if self.error { return None; }
@@ -259,8 +258,8 @@ impl<'a, 'b> Iterator for Cursor<'a, 'b> {
 			100 => Some(Ok(Cursor { p_stmt : self.p_stmt, error : false })),
 			101 => None,
 			err => {	self.error = true;
-					Some (Err(IoError {	kind : OtherIoError, desc : "Row Fetch Failed",
-										detail : Some(get_error(self.p_stmt.p_con.p_db, err))})) } }
+					Some (Err(Error::new(ErrorKind::Other, "Row Fetch Failed",
+											Some(get_error(self.p_stmt.p_con.p_db, err))))) } }
 		}
 		}
 	}
@@ -271,15 +270,16 @@ impl Connection {
 	///
 	///Returns a Connection if ok, or a <i>ConnectionFailed</i> IoError with (if available from the underlying database)
 	///in the <i>detail</i> field text that describes the error, result code, and text that describes the result code.
-	pub fn new(db_type : DbType, filename : &str) -> IoResult<Connection> {
+	pub fn new(db_type : DbType, filename : &str) -> Result<Connection> {
 		match db_type {
 			DbType::SQLite3 => {
 				let p_db : *const c_void = null();
-				match unsafe{sqlite3_open(CString::from_slice(filename.as_bytes()).as_ptr(), &p_db)} {
-					0 => Ok( Connection { 	db_type : DbType::SQLite3, p_db : p_db } ),
-					i => Err(IoError	{ 	kind : 	ConnectionFailed, desc : "Database Connection Failed",
-											detail : Some(get_error(p_db, i))}) 
-				}							
+				match CString::new(filename) {
+					Ok(s)	=> match unsafe{sqlite3_open(s.as_ptr(), &p_db)} {
+								0 => Ok( Connection { 	db_type : DbType::SQLite3, p_db : p_db } ),
+								i => Err(Error::new(ErrorKind::ConnectionRefused, "Database Connection Failed", Some(get_error(p_db, i)))) },
+					Err(e)	=> Err(Error::new(ErrorKind::Other, "Null Error", Some(e.nul_position().to_string())))
+				}
 			}
 		}
 	}
@@ -288,17 +288,19 @@ impl Connection {
 	///
 	///Returns a Statement if ok, or an <i>InvalidInput</i> IoError with (if available from the underlying database)
 	///in the <i>detail</i> field text that describes the error, result code, and text that describes the result code.	
-	pub fn prepare_statement<'a>(&'a self, sql :&str) -> IoResult<Statement<'a>> {
+	pub fn prepare_statement<'a>(&'a self, sql :&str) -> Result<Statement<'a>> {
 		match self.db_type {
-		DbType::SQLite3 => {
-		let p_stmt  : *const c_void = null();
-		let pz_tail : *const c_void = null();
+			DbType::SQLite3 => {
+				let p_stmt  : *const c_void = null();
+				let pz_tail : *const c_void = null();
 		
-		match unsafe { sqlite3_prepare_v2(self.p_db, CString::from_slice(sql.as_bytes()).as_ptr(), -1, &p_stmt, &pz_tail) } {
-			0 => Ok(Statement { p_con : self, p_stmt : p_stmt, exec : false }),
-			e => Err(IoError{	kind : InvalidInput, desc : "Statement Creation Failed",
-								detail : Some(get_error(self.p_db, e))}) }
-		}
+				match CString::new(sql) {
+					Ok(s)	=> match unsafe { sqlite3_prepare_v2(self.p_db, s.as_ptr(), -1, &p_stmt, &pz_tail) } {
+								0 => Ok(Statement { p_con : self, p_stmt : p_stmt, exec : false }),
+								e => Err(Error::new(ErrorKind::InvalidInput, "Statement Creation Failed",	Some(get_error(self.p_db, e)))) },
+					Err(e)	=> Err(Error::new(ErrorKind::Other, "Null Error", Some(e.nul_position().to_string())))
+				}
+			}
 		}
 	}
 
@@ -322,13 +324,13 @@ impl<'a> Drop for Statement<'a> {
 
 fn get_error<'a>(p_db : *const c_void, errno : c_int) -> String {
 	let mut buf=String::new();	
-	match from_utf8( unsafe{c_str_to_bytes(&sqlite3_errmsg(p_db))} ) {
+	match from_utf8( unsafe{CStr::from_ptr(sqlite3_errmsg(p_db))}.to_bytes() ) {
 		Ok(s) => buf.push_str(s),
 		Err(_) => ()
 	}
 	if !buf.is_empty() { buf.push(' '); }
 	buf.push('('); buf.push_str(errno.to_string().as_slice());
-	match from_utf8( unsafe{c_str_to_bytes(&sqlite3_errstr(errno))} ) {
+	match from_utf8( unsafe{CStr::from_ptr(sqlite3_errstr(errno))}.to_bytes() ) {
 		Ok(s) => { buf.push(':');  buf.push_str(s); }
 		Err(_) => ()
 	}

@@ -1,5 +1,5 @@
 ﻿use std::collections::hash_map::{HashMap, Keys, Values, Iter, IterMut};
-use std::old_io::{BufferedReader, BufferedWriter, IoError};
+use std::io::{BufRead, BufReader, Read, BufWriter, Write, Error};
 
 ///Contains a list of properties. A property is a key-value pair.
 pub struct Properties {
@@ -81,9 +81,9 @@ impl Properties {
 	is equivalent to <pre class='rust fn'>targetCities=Detroit, Chicago, Los Angeles</pre>
 	</ul>
 	*/
-	pub fn load<T : Reader>(&mut self,  reader : T)-> Option<IoError> {
+	pub fn load<T : BufRead>(&mut self,  reader : T)-> Option<Error> {
 		let mut multi = String::new();
-		for line in BufferedReader::new(reader).lines() {
+		for line in BufReader::new(reader).lines() {
 			match line {
 				Ok(l) => {
 					let mut l_str=l.as_slice().trim_left();
@@ -129,14 +129,14 @@ impl Properties {
 	///into a Properties list using the <code><b>fn <a href="#method.load" class="fnname">load</a>&lt;T:
 	///<a class="trait" href="http://static.rust-lang.org/doc/master/std/io/trait.Reader.html"
 	///title="std::io::Reader">Reader</a>&gt;</b></code> method.
-	pub fn store<T : Writer>(&mut self,  writer : T) -> Option<IoError> {
-		let mut buf = BufferedWriter::new(writer);
+	pub fn store<T : Write>(&mut self,  writer : T) -> Option<Error> {
+		let mut buf = BufWriter::new(writer);
 		for kv in self.props.iter() {
 			match kv {
 				(k,v) => {  let mut line = String::from_str(encode_chars(k.as_slice(), true).as_slice());
 							line.push('=');
-							line.push_str(encode_chars(v.as_slice(), false).as_slice());
-							match buf.write_line(line.as_slice()) 	{ 	Ok(_)  => continue,
+							line.push_str(encode_chars(v.as_slice(), false).as_slice()); line.push('\n');
+							match buf.write(line.as_bytes()) 	{ 	Ok(_)  => continue,
 															Err(e) => { return Some(e); }
 														}
 						}
