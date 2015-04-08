@@ -3,9 +3,8 @@
 //!This project is at an early development stage, please do not use elements tagged as <i>WIP</i>. 
 #![crate_type = "lib"]
 #![crate_name = "rustic"]
-#![feature(collections,core,io,libc)]
+#![feature(collections,libc)]
 
-extern crate collections;
 extern crate libc;
 
 ///Miscellaneous utility classes.
@@ -24,5 +23,5 @@ pub mod sql {
 	pub enum DbType {
 		SQLite3
 	}
-	impl Copy for DbType {}
+	//impl Copy for DbType {}
 }

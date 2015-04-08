@@ -86,7 +86,7 @@ impl Properties {
 		for line in BufReader::new(reader).lines() {
 			match line {
 				Ok(l) => {
-					let mut l_str=l.as_slice().trim_left();
+					let mut l_str=l.trim_left();
 					if l_str.starts_with("#") || l_str.starts_with("!") { continue; } // Comment line
 
 					if l_str.ends_with("\n") {
@@ -101,7 +101,7 @@ impl Properties {
 						if c=='\\' { esc=!esc; } else { break; }
 					}
 					if esc { multi.push_str(&l_str[..l_str.len()-1]); continue; }
-					if !multi.is_empty() { multi.push_str(l_str); l_str=multi.as_slice(); }
+					if !multi.is_empty() { multi.push_str(l_str); l_str=multi.as_ref(); }
 
 					// determination of the key
 					esc=false;
@@ -116,7 +116,7 @@ impl Properties {
 					l_str = &l_str[idx..]; l_str = l_str.trim_left();
 					if l_str.starts_with("=") || l_str.starts_with(":") { 	l_str = &l_str[1..];
 																			l_str = l_str.trim_left(); }					
-					self.props.insert(decode_chars(key.as_slice()), decode_chars(l_str));
+					self.props.insert(decode_chars(key.as_ref()), decode_chars(l_str));
 				}
 				Err(e) => { return Some(e); }
 			}
@@ -133,9 +133,9 @@ impl Properties {
 		let mut buf = BufWriter::new(writer);
 		for kv in self.props.iter() {
 			match kv {
-				(k,v) => {  let mut line = String::from_str(encode_chars(k.as_slice(), true).as_slice());
+				(k,v) => {  let mut line = String::from_str(encode_chars(k.as_ref(), true).as_ref());
 							line.push('=');
-							line.push_str(encode_chars(v.as_slice(), false).as_slice()); line.push('\n');
+							line.push_str(encode_chars(v.as_ref(), false).as_ref()); line.push('\n');
 							match buf.write(line.as_bytes()) 	{ 	Ok(_)  => continue,
 															Err(e) => { return Some(e); }
 														}
