@@ -1,5 +1,3 @@
-#![feature(core)]
-
 extern crate rustic;
 
 use rustic::sql::Connection;
@@ -12,49 +10,41 @@ fn main() {
 						Ok(mut st) => {
 							match st.execute() {
 									None    => (),
-									Some(e) => 	match e.detail {
-													Some(s) => println!("{}", s),
-													None => ()
-									}
+									Some(e) => 	println!("{}", e)
 							}				
 						},
-						Err(e) => match e.detail {
-							None => (),
-							Some(s) => println!("{}", s)
-						}
+						Err(e) =>  	println!("{}", e)
+						
 					}
 					match db.prepare_statement("INSERT INTO t VALUES (?,?,?,?);") {
 						Ok(mut st) => {
-							match st.set_long(1,10) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_double(2,10.1) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_string(3, "one") { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_blob(4, &[1, 2, 3]) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
-							match st.set_long(1,15) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_double(2,15.1) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_null(3) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_blob(4, &[4, 5, 6]) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
-							match st.set_long(1,20) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_double(2,20.2) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_string(3, "two") { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_blob(4, &[7, 8, 9]) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
-							match st.set_long(1,25) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_double(2,25.1) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_null(3) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_blob(4, &[10, 11, 12]) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
-							match st.set_long(1,30) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_double(2,30.3) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_string(3, "three") { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.set_blob(4, &[13, 14, 15]) { None=>(), Some(e) => match e.detail {Some(s) => println!("{}", s), None => ()}  }
-							match st.execute() { None=> (), Some(e) => 	match e.detail {Some(s) => println!("{}", s), None => ()} }
+							match st.set_long(1,10) { None=>(), Some(e) => println!("{}", e) }
+							match st.set_double(2,10.1) { None=>(), Some(e) => println!("{}", e) }
+							match st.set_string(3, "one") { None=>(), Some(e) => println!("{}", e) }
+							match st.set_blob(4, &[1, 2, 3]) { None=>(), Some(e) => println!("{}", e) }
+							match st.execute() { None=> (), Some(e) => 	println!("{}", e) }
+							match st.set_long(1,15) { None=>(), Some(e) => println!("{}", e) }
+							match st.set_double(2,15.1) { None=>(), Some(e) => println!("{}", e) }
+							match st.set_null(3) { None=>(), Some(e) => println!("{}", e) }
+							match st.set_blob(4, &[4, 5, 6]) { None=>(), Some(e) => println!("{}", e) }
+							match st.execute() { None=> (), Some(e) => 	println!("{}", e) }
+							match st.set_long(1,20) { None=>(), Some(e) => println!("{}", e) }
+							match st.set_double(2,20.2) { None=>(), Some(e) => println!("{}", e) }
+							match st.set_string(3, "two") { None=>(), Some(e) => println!("{}", e) }
+							match st.set_blob(4, &[7, 8, 9]) { None=>(), Some(e) => println!("{}", e) }
+							match st.execute() { None=> (), Some(e) => 	println!("{}", e) }
+							match st.set_long(1,25) { None=>(), Some(e) => println!("{}", e) }
+							match st.set_double(2,25.1) { None=>(), Some(e) => println!("{}", e) }
+							match st.set_null(3) { None=>(), Some(e) => println!("{}", e) }
+							match st.set_blob(4, &[10, 11, 12]) { None=>(), Some(e) => println!("{}", e) }
+							match st.execute() { None=> (), Some(e) => 	println!("{}", e) }
+							match st.set_long(1,30) { None=>(), Some(e) => println!("{}", e) }
+							match st.set_double(2,30.3) { None=>(), Some(e) => println!("{}", e) }
+							match st.set_string(3, "three") { None=>(), Some(e) => println!("{}", e) }
+							match st.set_blob(4, &[13, 14, 15]) { None=>(), Some(e) => println!("{}", e) }
+							match st.execute() { None=> (), Some(e) => println!("{}", e) }
 						},
-						Err(e) => match e.detail {
-							None => (),
-							Some(s) => println!("{}", s)
-						}
+						Err(e) => println!("{}", e)
 					}
 					match db.prepare_statement("SELECT i,f,t,b FROM t where t like ?;") {
 						Ok(mut st) => {
@@ -63,10 +53,7 @@ fn main() {
 								match i {
 									Ok(s)  => println!("{}:{}:{}:{:?}",	s.get_long(0), s.get_double(1),
 																		s.get_string(2), s.get_blob(3) ),
-									Err(e) => match e.detail {
-										Some(s) => println!("{}", s),
-										None => ()
-									}
+									Err(e) => println!("{}", e)
 								}
 							}
 							st.set_string(1, "%e%");
@@ -75,22 +62,13 @@ fn main() {
 								match i {
 									Ok(s)  => println!("{}:{}:{}:{:?}", 	s.get_long(0), s.get_double(1),
 																		s.get_string(2), s.get_blob(3) ),
-									Err(e) => match e.detail {
-										Some(s) => println!("{}", s),
-										None => ()
-									}
+									Err(e) => println!("{}", e)
 								}
 							}
 						},
-						Err(e) => match e.detail {
-							None => (),
-							Some(s) => println!("{}", s)
-						}
+						Err(e) => println!("{}", e)
 					}
 					}
-		Err(e) => match e.detail {
-						None => (),
-						Some(s) => println!("{}", s)
-					}
+		Err(e) => println!("{}", e)
 	}
 }

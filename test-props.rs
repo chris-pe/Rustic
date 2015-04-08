@@ -1,12 +1,13 @@
 extern crate rustic;
 
 use rustic::util::Properties;
-use std::io::{File, Open, Truncate, Read, Write};
+use std::path::Path;
+use std::fs::File;
 
 fn main() {
 
 	let pr = Path::new("test-props-in.properties");
-	let fr = match File::open_mode(&pr, Open, Read) {
+	let fr = match File::open(pr) {
 		Ok(f) => f,
 		Err(e) => panic!("file error: {}", e),
 	};
@@ -21,7 +22,7 @@ fn main() {
 	}
 
 	let pw = Path::new("test-props-out.properties");
-	let fw = match File::open_mode(&pw, Truncate, Write) {
+	let fw = match File::create(pw) {
 		Ok(f) => f,
 		Err(e) => panic!("file error: {}", e),
 	};

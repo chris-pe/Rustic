@@ -81,18 +81,16 @@ impl Properties {
 	is equivalent to <pre class='rust fn'>targetCities=Detroit, Chicago, Los Angeles</pre>
 	</ul>
 	*/
-	pub fn load<T : BufRead>(&mut self,  reader : T)-> Option<Error> {
+	pub fn load<T : Read>(&mut self,  reader : T)-> Option<Error> {
 		let mut multi = String::new();
 		for line in BufReader::new(reader).lines() {
 			match line {
 				Ok(l) => {
-					let mut l_str=l.trim_left();
+					let mut l_str=l.as_str().trim_left();
 					if l_str.starts_with("#") || l_str.starts_with("!") { continue; } // Comment line
 
-					if l_str.ends_with("\n") {
-						if l_str.ends_with("\r\n") { l_str=&l_str[..l_str.len()-2]; } // Line ends with '\r\n'
-							else { l_str=&l_str[..l_str.len()-1]; } // Line ends with '\n'
-					}
+					if l_str.ends_with("\r") { l_str=&l_str[..l_str.len()-1]; } // Line ends with '\r'
+
 					if l_str.len()==0 { continue; } //Empty line
 
 					// line finishing with an odd number of '\' is a multiline
