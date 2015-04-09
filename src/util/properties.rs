@@ -86,7 +86,7 @@ impl Properties {
 		for line in BufReader::new(reader).lines() {
 			match line {
 				Ok(l) => {
-					let mut l_str=l.as_str().trim_left();
+					let mut l_str=(&l[..]).trim_left();
 					if l_str.starts_with("#") || l_str.starts_with("!") { continue; } // Comment line
 
 					if l_str.ends_with("\r") { l_str=&l_str[..l_str.len()-1]; } // Line ends with '\r'
