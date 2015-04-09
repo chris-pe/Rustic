@@ -131,7 +131,7 @@ impl Properties {
 		let mut buf = BufWriter::new(writer);
 		for kv in self.props.iter() {
 			match kv {
-				(k,v) => {  let mut line = String::from_str(encode_chars(k.as_ref(), true).as_ref());
+				(k,v) => {  let mut line = encode_chars(k.as_ref(), true);
 							line.push('=');
 							line.push_str(encode_chars(v.as_ref(), false).as_ref()); line.push('\n');
 							match buf.write(line.as_bytes()) 	{ 	Ok(_)  => continue,
@@ -166,7 +166,7 @@ impl Properties {
 }
 
 fn decode_chars(s : &str) -> String {
-	let mut buf = String::from_str(s);
+	let mut buf = s.to_string();
 	let mut esc=false;
 	let mut idx = 0;
 	for mut c in s.chars() {
@@ -187,7 +187,7 @@ fn decode_chars(s : &str) -> String {
 }
 
 fn encode_chars<'a>(s : &str, is_key : bool) -> String {
-	let mut buf = String::from_str(s);
+	let mut buf = s.to_string();
 	let mut esc=true;
 	let mut idx = 0;
 	for c in s.chars() {

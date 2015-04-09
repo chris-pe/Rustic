@@ -5,6 +5,7 @@ use std::vec::Vec;
 use std::io::{Error, ErrorKind, Result};
 use std::ptr::null;
 use sql::DbType;
+use std::slice;
 
 #[link(name = "sqlite3")]
 extern {
@@ -219,7 +220,7 @@ impl<'a, 'b> Cursor<'a, 'b> {
 		DbType::SQLite3 => {
 			//match unsafe{CString::new(sqlite3_column_text(self.p_stmt.p_stmt, column_index as c_int) as *const i8, false)}.as_str()
 			match from_utf8(unsafe{CStr::from_ptr(sqlite3_column_text(self.p_stmt.p_stmt, column_index) as *const c_char)}.to_bytes())
-			{ Err(_) => String::new(), Ok(s) => String::from_str(s) }
+			{ Err(_) => String::new(), Ok(s) => s.to_string() }
 		}
 		}
 	}
@@ -230,7 +231,7 @@ impl<'a, 'b> Cursor<'a, 'b> {
 		DbType::SQLite3 => {
 		let p = unsafe { sqlite3_column_blob(self.p_stmt.p_stmt, column_index as c_int) };
 		let n = unsafe { sqlite3_column_bytes(self.p_stmt.p_stmt, column_index as c_int) };
-		unsafe {Vec::from_raw_buf(p, n as usize)}
+		Vec::from(unsafe {slice::from_raw_parts(p, n as usize)})
 		}
 		}
 	}	
