@@ -109,12 +109,12 @@ impl Properties {
 						if !esc && (c.is_whitespace() || c=='=' || c==':') { break; } 
 						esc=false; idx+=c.len_utf8();
 					}
-					let key = String::from_str(&l_str[..idx]);
+					let key = decode_chars(&l_str[..idx]);
 					
 					l_str = &l_str[idx..]; l_str = l_str.trim_left();
 					if l_str.starts_with("=") || l_str.starts_with(":") { 	l_str = &l_str[1..];
 																			l_str = l_str.trim_left(); }					
-					self.props.insert(decode_chars(key.as_ref()), decode_chars(l_str));
+					self.props.insert(key, decode_chars(l_str));
 				}
 				Err(e) => { return Some(e); }
 			}
