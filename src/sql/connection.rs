@@ -1,5 +1,4 @@
-﻿use libc::{c_int, c_char, c_uchar, c_double,c_void};
-use std::str::from_utf8;
+﻿use std::str::from_utf8;
 use std::ffi::{CString,CStr};
 use std::vec::Vec;
 use std::io::{Error, ErrorKind, Result};
@@ -9,33 +8,33 @@ use std::slice;
 
 #[link(name = "sqlite3")]
 extern {
-    fn sqlite3_open(filename : *const c_char, ppDb : *const*const c_void) -> c_int;
-	fn sqlite3_close_v2(pDb : *const c_void) -> c_int;
-	fn sqlite3_errmsg(pDb : *const c_void) -> *const c_char;
-	fn sqlite3_errstr(erno : c_int) -> *const c_char;
-	fn sqlite3_prepare_v2(pDb : *const c_void, sql : *const c_char, nByte : c_int, ppStmt : *const*const c_void, pzTail : *const*const c_void) -> c_int;
-	fn sqlite3_step(pStmt : *const c_void) -> c_int;
-	fn sqlite3_changes(pStmt : *const c_void) -> c_int;
-	fn sqlite3_column_int(pStmt : *const c_void, iCol : c_int) -> c_int;
-	fn sqlite3_column_int64(pStmt : *const c_void, iCol : c_int) -> i64;
-	fn sqlite3_column_double(pStmt : *const c_void, iCol : c_int) -> c_double;
-	fn sqlite3_column_text(pStmt : *const c_void, iCol : c_int) -> *const c_uchar;
-	fn sqlite3_column_blob(pStmt : *const c_void, iCol : c_int) -> *const u8;
-	fn sqlite3_column_bytes(pStmt : *const c_void, iCol : c_int) -> c_int;
-	fn sqlite3_bind_int(pStmt : *const c_void, iCol : c_int, value : c_int) -> c_int;
-	fn sqlite3_bind_int64(pStmt : *const c_void, iCol : c_int, value : i64) -> c_int;
-	fn sqlite3_bind_double(pStmt : *const c_void, iCol : c_int, value : f64) -> c_int;
-	fn sqlite3_bind_text(pStmt : *const c_void, iCol : c_int, value : *const c_char, n : c_int, f: *const extern fn(*const c_void)) -> c_int;
-	fn sqlite3_bind_null(pStmt : *const c_void, iCol : c_int) -> c_int;
-	fn sqlite3_bind_blob(pStmt : *const c_void, iCol : c_int, value : *const c_char, n : c_int, f: *const extern fn(*const c_void)) -> c_int;
-	fn sqlite3_reset(pStmt : *const c_void) -> c_int;
-	//fn sqlite3_finalize(pStmt : *c_void) -> c_int;
+    fn sqlite3_open(filename : *const i8, ppDb : *const*const i8) -> i32;
+	fn sqlite3_close_v2(pDb : *const i8) -> i32;
+	fn sqlite3_errmsg(pDb : *const i8) -> *const i8;
+	fn sqlite3_errstr(erno : i32) -> *const i8;
+	fn sqlite3_prepare_v2(pDb : *const i8, sql : *const i8, nByte : i32, ppStmt : *const*const i8, pzTail : *const*const i8) -> i32;
+	fn sqlite3_step(pStmt : *const i8) -> i32;
+	fn sqlite3_changes(pStmt : *const i8) -> i32;
+	fn sqlite3_column_int(pStmt : *const i8, iCol : i32) -> i32;
+	fn sqlite3_column_int64(pStmt : *const i8, iCol : i32) -> i64;
+	fn sqlite3_column_double(pStmt : *const i8, iCol : i32) -> f64;
+	fn sqlite3_column_text(pStmt : *const i8, iCol : i32) -> *const u8;
+	fn sqlite3_column_blob(pStmt : *const i8, iCol : i32) -> *const u8;
+	fn sqlite3_column_bytes(pStmt : *const i8, iCol : i32) -> i32;
+	fn sqlite3_bind_int(pStmt : *const i8, iCol : i32, value : i32) -> i32;
+	fn sqlite3_bind_int64(pStmt : *const i8, iCol : i32, value : i64) -> i32;
+	fn sqlite3_bind_double(pStmt : *const i8, iCol : i32, value : f64) -> i32;
+	fn sqlite3_bind_text(pStmt : *const i8, iCol : i32, value : *const i8, n : i32, f: *const extern fn(*const i8)) -> i32;
+	fn sqlite3_bind_null(pStmt : *const i8, iCol : i32) -> i32;
+	fn sqlite3_bind_blob(pStmt : *const i8, iCol : i32, value : *const i8, n : i32, f: *const extern fn(*const i8)) -> i32;
+	fn sqlite3_reset(pStmt : *const i8) -> i32;
+	//fn sqlite3_finalize(pStmt : *i8) -> i32;
 }
 
 ///Connection permits to connect to supported databases.
 pub struct Connection {
 	db_type : DbType,
-	p_db : *const c_void
+	p_db : *const i8
 }
 
 ///Statement is used for executing SQL instructions and returning results.
@@ -43,7 +42,7 @@ pub struct Connection {
 ///In the SQL Statement, ? character is replaced by a parameter using a set_* method.
 pub struct Statement<'a> {
 	p_con  : &'a Connection,
-	p_stmt : *const c_void,
+	p_stmt : *const i8,
 	exec  : bool
 }
 
@@ -107,7 +106,7 @@ impl<'a> Statement<'a> {
 		match self.p_con.db_type {
 		DbType::SQLite3 => {
 			if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; self.exec=false; }
-			match unsafe { sqlite3_bind_int64(self.p_stmt, param_index as c_int, value) } {
+			match unsafe { sqlite3_bind_int64(self.p_stmt, param_index as i32, value) } {
 				0 => None,
 				n => Some(Error::new(ErrorKind::Other, get_error(self.p_con.p_db, n).as_ref())) }
 		}
@@ -119,7 +118,7 @@ impl<'a> Statement<'a> {
 		match self.p_con.db_type {
 		DbType::SQLite3 => {
 			if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; self.exec=false; }
-			match unsafe { sqlite3_bind_double(self.p_stmt, param_index as c_int, value as f64) } {
+			match unsafe { sqlite3_bind_double(self.p_stmt, param_index as i32, value as f64) } {
 				0 => None,
 				n => Some(Error::new(ErrorKind::Other, get_error(self.p_con.p_db, n).as_ref())) }
 		}
@@ -131,7 +130,7 @@ impl<'a> Statement<'a> {
 		match self.p_con.db_type {
 		DbType::SQLite3 => {
 			if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; self.exec=false; }
-			match unsafe { sqlite3_bind_double(self.p_stmt, param_index as c_int, value) } {
+			match unsafe { sqlite3_bind_double(self.p_stmt, param_index as i32, value) } {
 				0 => None,
 				n => Some(Error::new(ErrorKind::Other, get_error(self.p_con.p_db, n).as_ref())) }
 		}
@@ -144,9 +143,9 @@ impl<'a> Statement<'a> {
 		DbType::SQLite3 => {
 			if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; self.exec=false; }
 			match CString::new(value) {
-				Ok(s)	=> match unsafe { sqlite3_bind_text(self.p_stmt, param_index as c_int, s.as_ptr(), -1i32, !0 as *const extern fn(*const c_void)) } {
+				Ok(s)	=> match unsafe { sqlite3_bind_text(self.p_stmt, param_index as i32, s.as_ptr(), -1i32, !0 as *const extern fn(*const i8)) } {
 								0 => None,
-								n => Some(Error::new(ErrorKind::Other, get_error(self.p_con.p_db, n as c_int).as_ref())) },
+								n => Some(Error::new(ErrorKind::Other, get_error(self.p_con.p_db, n as i32).as_ref())) },
 				Err(e)	=> Some(Error::new(ErrorKind::Other, e))
 			}
 		}
@@ -158,8 +157,8 @@ impl<'a> Statement<'a> {
 		match self.p_con.db_type {
 		DbType::SQLite3 => {
 			if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; self.exec=false; }
-			match unsafe { sqlite3_bind_blob(self.p_stmt, param_index as c_int, value.as_ptr() as *const i8,
-												value.len() as i32, !0 as *const extern fn(*const c_void)) } {
+			match unsafe { sqlite3_bind_blob(self.p_stmt, param_index as i32, value.as_ptr() as *const i8,
+												value.len() as i32, !0 as *const extern fn(*const i8)) } {
 				0 => None,
 				n => Some(Error::new(ErrorKind::Other, get_error(self.p_con.p_db, n).as_ref())) }
 		}
@@ -171,7 +170,7 @@ impl<'a> Statement<'a> {
 		match self.p_con.db_type {
 		DbType::SQLite3 => {
 			if self.exec { unsafe { sqlite3_reset(self.p_stmt) }; self.exec=false; }
-			match unsafe { sqlite3_bind_null(self.p_stmt, param_index as c_int) } {
+			match unsafe { sqlite3_bind_null(self.p_stmt, param_index as i32) } {
 				0 => None,
 				n => Some(Error::new(ErrorKind::Other, get_error(self.p_con.p_db, n).as_ref())) }
 		}
@@ -185,7 +184,7 @@ impl<'a, 'b> Cursor<'a, 'b> {
 	pub fn get_int(&self, column_index : i32) -> i32 {
 		match self.p_stmt.p_con.db_type {
 		DbType::SQLite3 => {
-		unsafe { sqlite3_column_int(self.p_stmt.p_stmt, column_index as c_int) as i32} 
+		unsafe { sqlite3_column_int(self.p_stmt.p_stmt, column_index as i32) as i32} 
 		}
 		}
 	}
@@ -193,7 +192,7 @@ impl<'a, 'b> Cursor<'a, 'b> {
 	pub fn get_long(&self, column_index : i32) -> i64 {
 		match self.p_stmt.p_con.db_type {
 		DbType::SQLite3 => {
-		unsafe { sqlite3_column_int64(self.p_stmt.p_stmt, column_index as c_int) } 
+		unsafe { sqlite3_column_int64(self.p_stmt.p_stmt, column_index as i32) } 
 		}
 		}
 	}
@@ -201,7 +200,7 @@ impl<'a, 'b> Cursor<'a, 'b> {
 	pub fn get_float(&self, column_index : i32) -> f32 {
 		match self.p_stmt.p_con.db_type {
 		DbType::SQLite3 => {
-		unsafe { sqlite3_column_double(self.p_stmt.p_stmt, column_index as c_int) as f32} 
+		unsafe { sqlite3_column_double(self.p_stmt.p_stmt, column_index as i32) as f32} 
 		}
 		}
 	}
@@ -209,7 +208,7 @@ impl<'a, 'b> Cursor<'a, 'b> {
 	pub fn get_double(&self, column_index : i32) -> f64 {
 		match self.p_stmt.p_con.db_type {
 		DbType::SQLite3 => {
-		unsafe { sqlite3_column_double(self.p_stmt.p_stmt, column_index as c_int) } 
+		unsafe { sqlite3_column_double(self.p_stmt.p_stmt, column_index as i32) } 
 		}
 		}
 	}
@@ -218,8 +217,8 @@ impl<'a, 'b> Cursor<'a, 'b> {
 	pub fn get_string(&self, column_index : i32) -> String {
 		match self.p_stmt.p_con.db_type {
 		DbType::SQLite3 => {
-			//match unsafe{CString::new(sqlite3_column_text(self.p_stmt.p_stmt, column_index as c_int) as *const i8, false)}.as_str()
-			match from_utf8(unsafe{CStr::from_ptr(sqlite3_column_text(self.p_stmt.p_stmt, column_index) as *const c_char)}.to_bytes())
+			//match unsafe{CString::new(sqlite3_column_text(self.p_stmt.p_stmt, column_index as i32) as *const i8, false)}.as_str()
+			match from_utf8(unsafe{CStr::from_ptr(sqlite3_column_text(self.p_stmt.p_stmt, column_index) as *const i8)}.to_bytes())
 			{ Err(_) => String::new(), Ok(s) => s.to_string() }
 		}
 		}
@@ -229,8 +228,8 @@ impl<'a, 'b> Cursor<'a, 'b> {
 	pub fn get_blob(&self, column_index : i32) -> Vec<u8> {
 		match self.p_stmt.p_con.db_type {
 		DbType::SQLite3 => {
-		let p = unsafe { sqlite3_column_blob(self.p_stmt.p_stmt, column_index as c_int) };
-		let n = unsafe { sqlite3_column_bytes(self.p_stmt.p_stmt, column_index as c_int) };
+		let p = unsafe { sqlite3_column_blob(self.p_stmt.p_stmt, column_index as i32) };
+		let n = unsafe { sqlite3_column_bytes(self.p_stmt.p_stmt, column_index as i32) };
 		Vec::from(unsafe {slice::from_raw_parts(p, n as usize)})
 		}
 		}
@@ -266,7 +265,7 @@ impl Connection {
 	pub fn new(db_type : DbType, filename : &str) -> Result<Connection> {
 		match db_type {
 			DbType::SQLite3 => {
-				let p_db : *const c_void = null();
+				let p_db : *const i8 = null();
 				match CString::new(filename) {
 					Ok(s)	=> match unsafe{sqlite3_open(s.as_ptr(), &p_db)} {
 								0 => Ok( Connection { 	db_type : DbType::SQLite3, p_db : p_db } ),
@@ -284,8 +283,8 @@ impl Connection {
 	pub fn prepare_statement<'a>(&'a self, sql :&str) -> Result<Statement<'a>> {
 		match self.db_type {
 			DbType::SQLite3 => {
-				let p_stmt  : *const c_void = null();
-				let pz_tail : *const c_void = null();
+				let p_stmt  : *const i8 = null();
+				let pz_tail : *const i8 = null();
 		
 				match CString::new(sql) {
 					Ok(s)	=> match unsafe { sqlite3_prepare_v2(self.p_db, s.as_ptr(), -1, &p_stmt, &pz_tail) } {
@@ -315,7 +314,7 @@ impl<'a> Drop for Statement<'a> {
 }
 */
 
-fn get_error<'a>(p_db : *const c_void, errno : c_int) -> String {
+fn get_error<'a>(p_db : *const i8, errno : i32) -> String {
 	let mut buf=String::new();	
 	match from_utf8( unsafe{CStr::from_ptr(sqlite3_errmsg(p_db))}.to_bytes() ) {
 		Ok(s) => buf.push_str(s),
