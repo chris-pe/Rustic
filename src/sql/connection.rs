@@ -21,6 +21,7 @@ extern {
 	fn sqlite3_column_text(pStmt : *const i8, iCol : i32) -> *const u8;
 	fn sqlite3_column_blob(pStmt : *const i8, iCol : i32) -> *const u8;
 	fn sqlite3_column_bytes(pStmt : *const i8, iCol : i32) -> i32;
+	fn sqlite3_column_type(pStmt : *const i8, iCol : i32) -> i32;
 	fn sqlite3_bind_int(pStmt : *const i8, iCol : i32, value : i32) -> i32;
 	fn sqlite3_bind_int64(pStmt : *const i8, iCol : i32, value : i64) -> i32;
 	fn sqlite3_bind_double(pStmt : *const i8, iCol : i32, value : f64) -> i32;
@@ -214,10 +215,11 @@ impl<'a, 'b> Cursor<'a, 'b> {
 	}
 
 	///Retrieve the column value as String with index <i>column_index</i>from the current row, the first column is 0.
+	///If column value is NULL, returns "NULL"
 	pub fn get_string(&self, column_index : i32) -> String {
 		match self.p_stmt.p_con.db_type {
 		DbType::SQLite3 => {
-			//match unsafe{CString::new(sqlite3_column_text(self.p_stmt.p_stmt, column_index as i32) as *const i8, false)}.as_str()
+			if unsafe { sqlite3_column_type(self.p_stmt.p_stmt, column_index as i32) } == 5 { return "NULL".to_string(); }
 			match from_utf8(unsafe{CStr::from_ptr(sqlite3_column_text(self.p_stmt.p_stmt, column_index) as *const i8)}.to_bytes())
 			{ Err(_) => String::new(), Ok(s) => s.to_string() }
 		}
@@ -225,12 +227,14 @@ impl<'a, 'b> Cursor<'a, 'b> {
 	}
 
 	///Retrieve the column value as an array of bytes <i>column_index</i>from the current row, the first column is 0.
+	///If column value is NULL, returns ['N', 'U', 'L', 'L']
 	pub fn get_blob(&self, column_index : i32) -> Vec<u8> {
 		match self.p_stmt.p_con.db_type {
 		DbType::SQLite3 => {
-		let p = unsafe { sqlite3_column_blob(self.p_stmt.p_stmt, column_index as i32) };
-		let n = unsafe { sqlite3_column_bytes(self.p_stmt.p_stmt, column_index as i32) };
-		Vec::from(unsafe {slice::from_raw_parts(p, n as usize)})
+			if unsafe { sqlite3_column_type(self.p_stmt.p_stmt, column_index as i32) } == 5 { return vec![78, 85, 76, 76]; }
+			let p = unsafe { sqlite3_column_blob(self.p_stmt.p_stmt, column_index as i32) };
+			let n = unsafe { sqlite3_column_bytes(self.p_stmt.p_stmt, column_index as i32) };
+			Vec::from(unsafe {slice::from_raw_parts(p, n as usize)})
 		}
 		}
 	}	

@@ -65,6 +65,28 @@ fn main() {
 									Err(e) => println!("{}", e)
 								}
 							}
+							st.set_string(1, "%");
+							println!("----------------------------------------------------");
+							for i in st.execute_query() {
+								match i {
+									Ok(s)  => println!("{}:{}:{}:{:?}", 	s.get_long(0), s.get_double(1),
+																		s.get_string(2), s.get_blob(3) ),
+									Err(e) => println!("{}", e)
+								}
+							}
+						},
+						Err(e) => println!("{}", e)
+					}
+					match db.prepare_statement("SELECT i,f,t,b FROM t where t is null;") {
+						Ok(mut st) => {
+							println!("----------------------------------------------------");
+							for i in st.execute_query() {
+								match i {
+									Ok(s)  => println!("{}:{}:{:}:{:?}", 	s.get_long(0), s.get_double(1),
+																		String::from_utf8(s.get_blob(2)).unwrap(), s.get_blob(3) ),
+									Err(e) => println!("{}", e)
+								}
+							}
 						},
 						Err(e) => println!("{}", e)
 					}
